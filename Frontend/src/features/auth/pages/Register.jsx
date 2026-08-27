@@ -1,12 +1,22 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
+import { useAuth } from '../hook/useAuth'
+import { useSelector } from 'react-redux'
+import { Navigate } from 'react-router'
 
 const Register = () => {
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
-  const submitForm = (event) => {
+  const user = useSelector(state => state.auth.user)
+  const loading = useSelector(state => state.auth.loading)
+  const error = useSelector(state => state.auth.error)
+
+  const { handleRegister } = useAuth()
+  const navigate = useNavigate()
+
+  const submitForm = async (event) => {
     event.preventDefault()
 
     const payload = {
@@ -15,7 +25,12 @@ const Register = () => {
       password,
     }
 
-    console.log('Register payload:', payload)
+    await handleRegister(payload)
+    navigate('/login')
+  }
+
+  if (!loading && user) {
+    return <Navigate to="/" replace />
   }
 
   return (
