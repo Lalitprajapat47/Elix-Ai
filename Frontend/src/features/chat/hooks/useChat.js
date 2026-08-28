@@ -11,24 +11,32 @@ export const useChat = () => {
 
     async function handleSendMessage({ message, chatId }) {
         dispatch(setLoading(true))
-        const data = await sendMessage({ message, chatId })
-        const { chat, aiMessage } = data
-        if (!chatId)
-            dispatch(createNewChat({
-                chatId: chat._id,
-                title: chat.title,
+        dispatch(setError(null))
+        try {
+            const data = await sendMessage({ message, chatId })
+            const { chat, aiMessage } = data
+            if (!chatId)
+                dispatch(createNewChat({
+                    chatId: chat._id,
+                    title: chat.title,
+                }))
+            dispatch(addNewMessage({
+                chatId: chatId || chat._id,
+                content: message,
+                role: "user",
             }))
-        dispatch(addNewMessage({
-            chatId: chatId || chat._id,
-            content: message,
-            role: "user",
-        }))
-        dispatch(addNewMessage({
-            chatId: chatId || chat._id,
-            content: aiMessage.content,
-            role: aiMessage.role,
-        }))
-        dispatch(setCurrentChatId(chat._id))
+            dispatch(addNewMessage({
+                chatId: chatId || chat._id,
+                content: aiMessage.content,
+                role: aiMessage.role,
+            }))
+            dispatch(setCurrentChatId(chat._id))
+        } catch (error) {
+            dispatch(setError(error.response?.data?.message || "Failed to send message"))
+            throw error
+        } finally {
+            dispatch(setLoading(false))
+        }
     }
 
     async function handleGetChats() {
@@ -48,8 +56,6 @@ export const useChat = () => {
     }
 
     async function handleOpenChat(chatId, chats) {
-
-        console.log(chats[ chatId ]?.messages.length)
 
         if (chats[ chatId ]?.messages.length === 0) {
             const data = await getMessages(chatId)
