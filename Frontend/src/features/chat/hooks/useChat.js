@@ -1,6 +1,6 @@
 import { initializeSocketConnection } from "../service/chat.socket";
 import { sendMessage, getChats, getMessages, deleteChat } from "../service/chat.api";
-import { setChats, setCurrentChatId, setError, setLoading, createNewChat, addNewMessage, addMessages } from "../chat.slice";
+import { setChats, removeChat, setCurrentChatId, setError, setLoading, createNewChat, addNewMessage, addMessages } from "../chat.slice";
 import { useDispatch } from "react-redux";
 
 
@@ -30,7 +30,7 @@ export const useChat = () => {
                 content: aiMessage.content,
                 role: aiMessage.role,
             }))
-           dispatch(setCurrentChatId(chatId || chat._id))
+            dispatch(setCurrentChatId(chatId || chat._id))
         } catch (error) {
             dispatch(setError(error.response?.data?.message || "Failed to send message"))
             throw error
@@ -44,7 +44,7 @@ export const useChat = () => {
         const data = await getChats()
         const { chats } = data
         dispatch(setChats(chats.reduce((acc, chat) => {
-            acc[ chat._id ] = {
+            acc[chat._id] = {
                 id: chat._id,
                 title: chat.title,
                 messages: [],
@@ -57,7 +57,7 @@ export const useChat = () => {
 
     async function handleOpenChat(chatId, chats) {
 
-        if (chats[ chatId ]?.messages.length === 0) {
+        if (chats[chatId]?.messages.length === 0) {
             const data = await getMessages(chatId)
             const { messages } = data
 
@@ -74,11 +74,22 @@ export const useChat = () => {
         dispatch(setCurrentChatId(chatId))
     }
 
-    return {
-        initializeSocketConnection,
-        handleSendMessage,
-        handleGetChats,
-        handleOpenChat
+    async function handleDeleteChat(chatId) {
+        try {
+            await deleteChat(chatId)
+            dispatch(removeChat(chatId))
+        } catch (error) {
+            dispatch(setError(error.response?.data?.message || "Failed to delete chat"))
+            throw error
+        }
     }
+
+    return {
+    initializeSocketConnection,
+    handleSendMessage,
+    handleGetChats,
+    handleOpenChat,
+    handleDeleteChat
+}
 
 }
