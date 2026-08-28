@@ -140,6 +140,19 @@ export async function getMe(req, res) {
     })
 }
 
+/**
+ * @desc Log out the current user by clearing the auth cookie
+ * @route POST /api/auth/logout
+ * @access Private
+ */
+export async function logout(req, res) {
+    res.clearCookie("token")
+
+    res.status(200).json({
+        message: "Logged out successfully",
+        success: true
+    })
+}
 
 /**
  * @desc Verify user's email address
