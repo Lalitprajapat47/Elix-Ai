@@ -1,49 +1,78 @@
 import React, { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSelector, useDispatch } from 'react-redux'
+import remarkGfm from 'remark-gfm'
+import { FishSymbol } from 'lucide-react'
+
+// Hooks & Actions
 import { useChat } from '../hooks/useChat'
 import { useAuth } from '../../auth/hook/useAuth'
-import remarkGfm from 'remark-gfm'
 import { setCurrentChatId } from '../chat.slice'
 
 const Dashboard = () => {
+  // ==========================================
+  // 1. HOOKS & GLOBAL STATE
+  // ==========================================
   const dispatch = useDispatch()
   const chat = useChat()
   const { handleLogout } = useAuth()
+
   const user = useSelector((state) => state.auth.user)
+  const chats = useSelector((state) => state.chat.chats)
+  const currentChatId = useSelector((state) => state.chat.currentChatId)
+
+  // ==========================================
+  // 2. LOCAL COMPONENT STATE
+  // ==========================================
   const [chatInput, setChatInput] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [pendingMessage, setPendingMessage] = useState(null)
   const [sendError, setSendError] = useState(null)
+  
+  // UI Panels & Tool Controls
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const chats = useSelector((state) => state.chat.chats)
-  const currentChatId = useSelector((state) => state.chat.currentChatId)
+  const [showSearch, setShowSearch] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [copiedIndex, setCopiedIndex] = useState(null)
 
+  // ==========================================
+  // 3. DOM & ENGINE REFS
+  // ==========================================
   const messagesEndRef = useRef(null)
   const sendingRef = useRef(false)
   const inputRef = useRef(null)
   const profileRef = useRef(null)
 
+  // Derived Active State
+  const activeMessages = (currentChatId && chats[currentChatId]?.messages) || []
+  const hasMessages = activeMessages.length > 0 || isSending
+
+  // ==========================================
+  // 4. SIDE EFFECTS & EVENT LISTENERS
+  // ==========================================
+
+  // Initialize Connection and Fetch Chats
   useEffect(() => {
     chat.initializeSocketConnection()
     chat.handleGetChats()
   }, [])
 
-  const activeMessages = (currentChatId && chats[currentChatId]?.messages) || []
-  const hasMessages = activeMessages.length > 0 || isSending
-
+  // Auto Scroll on Message Updates
   useEffect(() => {
     if (hasMessages) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [activeMessages, hasMessages, isSending])
 
+  // Maintain Input Focus
   useEffect(() => {
     if (!isSending) {
       inputRef.current?.focus()
     }
   }, [isSending])
 
+  // Profile Dropdown Outside-Click Handler
   useEffect(() => {
     if (!isProfileOpen) return
 
@@ -57,28 +86,58 @@ const Dashboard = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isProfileOpen])
 
+  // ==========================================
+  // 5. EVENT HANDLERS
+  // ==========================================
+
+  // Reset to Clean Slate / New Session
   const handleNewSession = () => {
     dispatch(setCurrentChatId(null))
     setChatInput('')
     setSendError(null)
   }
 
-  const handleSubmitMessage = async (event) => {
-    event.preventDefault()
-    const trimmedMessage = chatInput.trim()
-    if (!trimmedMessage || sendingRef.current) return
+  // Open Chat by ID
+  const openChat = (chatId) => {
+    chat.handleOpenChat(chatId, chats)
+  }
+
+  // Delete Session
+  const handleDeleteChat = async (event, chatId) => {
+    event.stopPropagation()
+    const confirmed = window.confirm('Delete this session?')
+    if (!confirmed) return
+    try {
+      await chat.handleDeleteChat(chatId)
+    } catch (err) {
+      // Error handled by redux state
+    }
+  }
+
+  // Copy AI Response to Clipboard
+  const handleCopyMessage = (content, index) => {
+    navigator.clipboard.writeText(content)
+    setCopiedIndex(index)
+    setTimeout(() => setCopiedIndex(null), 2000)
+  }
+
+  // Send Message Payload
+  const handleSubmitMessage = async (event, customMsg = null) => {
+    if (event) event.preventDefault()
+    const msgToSend = (customMsg || chatInput).trim()
+    if (!msgToSend || sendingRef.current) return
 
     sendingRef.current = true
     setSendError(null)
-    setPendingMessage(trimmedMessage)
+    setPendingMessage(msgToSend)
     setChatInput('')
     setIsSending(true)
 
     try {
-      await chat.handleSendMessage({ message: trimmedMessage, chatId: currentChatId })
+      await chat.handleSendMessage({ message: msgToSend, chatId: currentChatId })
     } catch (err) {
-      setSendError('Message could not be sent. Please try again.')
-      setChatInput(trimmedMessage)
+      setSendError('Engine connection interrupted. Retry query.')
+      setChatInput(msgToSend)
     } finally {
       sendingRef.current = false
       setIsSending(false)
@@ -86,117 +145,173 @@ const Dashboard = () => {
     }
   }
 
-  const openChat = (chatId) => {
-    chat.handleOpenChat(chatId, chats)
-  }
+  // Filtered Sessions List
+  const filteredChats = Object.values(chats).filter((chatObj) =>
+    (chatObj.title || 'Untitled Session').toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
-  const handleDeleteChat = async (event, chatId) => {
-    event.stopPropagation()
-    const confirmed = window.confirm('Delete this chat? This cannot be undone.')
-    if (!confirmed) return
-    try {
-      await chat.handleDeleteChat(chatId)
-    } catch (err) {
-      // error is already reflected in chat state; nothing further to do here
-    }
-  }
-
+  // ==========================================
+  // 6. VIEW RENDER
+  // ==========================================
   return (
-    <main className='relative flex h-screen w-full bg-[#040507] text-zinc-100 overflow-hidden font-sans select-none'>
-
+    <main className="relative flex h-screen w-full bg-[#040507] text-zinc-100 overflow-hidden font-sans select-none">
+      
+      {/* Dynamic Keyframe Animations & Background Mesh */}
       <style>{`
         @keyframes dynamicSilverGlow {
-          0%, 100% {
-            opacity: 0.45;
-            transform: scale(0.94);
-            filter: blur(80px);
-          }
-          50% {
-            opacity: 0.78;
-            transform: scale(1.10);
-            filter: blur(95px);
-          }
+          0%, 100% { opacity: 0.35; transform: scale(0.95); filter: blur(90px); }
+          50% { opacity: 0.75; transform: scale(1.12); filter: blur(110px); }
         }
         .animate-silver-ambient {
-          animation: dynamicSilverGlow 5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          animation: dynamicSilverGlow 6s ease-in-out infinite;
         }
-
-        @keyframes typingBounce {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
-          30% { transform: translateY(-4px); opacity: 1; }
-        }
-        .typing-dot {
-          animation: typingBounce 1.2s infinite ease-in-out;
+        .bg-grid-mesh {
+          background-size: 40px 40px;
+          background-image: 
+            linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
         }
       `}</style>
 
+      {/* Ambient Grid Layer */}
+      <div className="absolute inset-0 bg-grid-mesh pointer-events-none opacity-50" />
+
+      {/* Core Silver Fog Backdrop (Visible when idle) */}
       {!hasMessages && (
-        <div className='absolute inset-0 flex items-center justify-center pointer-events-none z-0'>
-          <div className='animate-silver-ambient absolute h-[520px] w-[820px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.22)_0%,rgba(190,195,210,0.1)_40%,transparent_72%)]' />
-          <div className='animate-silver-ambient absolute h-[260px] w-[420px] rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.32)_0%,rgba(210,215,225,0.08)_50%,transparent_70%)]' style={{ animationDelay: '-2.5s' }} />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+          <div className="animate-silver-ambient absolute h-[580px] w-[900px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.18)_0%,rgba(160,165,180,0.06)_45%,transparent_75%)]" />
+          <div className="animate-silver-ambient absolute h-[280px] w-[450px] rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.35)_0%,rgba(200,205,220,0.06)_50%,transparent_70%)]" style={{ animationDelay: '-3s' }} />
         </div>
       )}
 
-      <section className='relative z-10 flex h-full w-full max-w-[1650px] mx-auto p-4 md:p-6 gap-6'>
+      {/* Reopen Sidebar Trigger (Floating Button) */}
+      {!isSidebarOpen && (
+        <button
+          type="button"
+          onClick={() => setIsSidebarOpen(true)}
+          className="absolute left-5 top-5 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-zinc-950/80 text-zinc-400 backdrop-blur-xl transition hover:border-white/20 hover:text-white cursor-pointer shadow-xl"
+          title="Open Sidebar"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="3" width="18" height="18" rx="4" />
+            <path d="M9 3v18" />
+          </svg>
+        </button>
+      )}
 
-        <aside className='hidden md:flex w-72 shrink-0 flex-col rounded-3xl bg-zinc-950/70 border border-white/[0.07] backdrop-blur-2xl p-5 shadow-2xl'>
-          <div className='flex items-center gap-3 mb-6 px-2 pt-1'>
-            <div className='h-3.5 w-3.5 rounded-full bg-gradient-to-b from-white to-zinc-400 shadow-[0_0_12px_rgba(255,255,255,0.6)] ring-2 ring-white/10' />
-            <h1 className='text-base font-semibold tracking-wide text-zinc-100'>Elix.ai</h1>
+      {/* App Workspace Shell */}
+      <div className="relative z-10 flex h-full w-full">
+
+        {/* ---------------------------------------------------- */}
+        {/* SIDEBAR NAVIGATION (Desktop Scale / 280px)            */}
+        {/* ---------------------------------------------------- */}
+        <aside
+          className={`shrink-0 flex flex-col h-full bg-[#08090C] border-r border-white/[0.08] p-4 transition-all duration-300 ${
+            isSidebarOpen ? 'w-[280px]' : 'hidden'
+          }`}
+        >
+          {/* Header Brand & Controls */}
+          <div className="flex items-center justify-between mb-5 px-2 pt-1">
+            <div className="flex items-center gap-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-white/[0.06] border border-white/10">
+                <FishSymbol className="h-4 w-4 text-zinc-100" />
+              </div>
+              <span
+                style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif" }}
+                className="text-base font-semibold tracking-[-0.02em] text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-400"
+              >
+                Elix<span className="text-zinc-500 font-light">.ai</span>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1 text-zinc-400">
+              <button
+                type="button"
+                onClick={() => setShowSearch(!showSearch)}
+                className="p-2 rounded-lg hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer"
+                title="Search Chats"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(false)}
+                className="p-2 rounded-lg hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer"
+                title="Collapse Sidebar"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="3" />
+                  <path d="M9 3v18" />
+                </svg>
+              </button>
+            </div>
           </div>
 
+          {/* Quick Search Input */}
+          {showSearch && (
+            <div className="mb-3 px-1 animate-fade-in">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search queries..."
+                className="w-full rounded-xl border border-white/10 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-white/20"
+              />
+            </div>
+          )}
+
+          {/* New Session Action */}
           <button
-            type='button'
+            type="button"
             onClick={handleNewSession}
-            className='group flex items-center gap-3 w-full px-4 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/20 text-xs font-medium text-zinc-200 transition-all duration-200 mb-6 shadow-sm active:scale-[0.98] cursor-pointer'
+            className="group flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.07] hover:bg-white/[0.08] hover:border-white/15 text-sm font-medium text-zinc-200 transition mb-5 active:scale-[0.99] cursor-pointer"
           >
-            <span className='text-base leading-none text-zinc-400 group-hover:text-white transition-colors'>+</span>
-            <span>New Session</span>
+            <div className="flex items-center gap-3">
+              <span className="text-base text-zinc-400 group-hover:text-white transition-colors">+</span>
+              <span>New Session</span>
+            </div>
+            <span className="text-[11px] text-zinc-500 font-mono">⌘K</span>
           </button>
 
-          <div className='flex items-center justify-between px-2 mb-2'>
-            <span className='text-[10px] font-semibold tracking-widest uppercase text-zinc-500'>Recent Sessions</span>
+          {/* History Section Heading */}
+          <div className="flex items-center justify-between px-2 mb-2">
+            <span className="text-[11px] font-medium tracking-wider uppercase text-zinc-500">History</span>
           </div>
 
-          <div className='flex-1 space-y-1 overflow-y-auto pr-1'>
-            {Object.values(chats).map((chatObj, index) => {
+          {/* Sessions List */}
+          <div className="flex-1 space-y-1 overflow-y-auto pr-1">
+            {filteredChats.map((chatObj, index) => {
               const isActive = chatObj.id === currentChatId
               return (
                 <div
                   key={index}
                   onClick={() => openChat(chatObj.id)}
-                  role='button'
+                  role="button"
                   tabIndex={0}
-                  onKeyDown={(event) => { if (event.key === 'Enter') openChat(chatObj.id) }}
-                  className={`group relative w-full flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left text-xs transition-all duration-200 cursor-pointer ${isActive
-                    ? 'bg-white/[0.08] text-white font-medium border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]'
-                    }`}
+                  className={`group relative w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition cursor-pointer ${
+                    isActive
+                      ? 'bg-white/[0.08] text-white font-medium shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]'
+                  }`}
                 >
-                  {isActive && (
-                    <div className='absolute left-1.5 top-1/2 -translate-y-1/2 h-4 w-1 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]' />
-                  )}
-
-                  <svg
-                    className={`w-3.5 h-3.5 shrink-0 transition-colors ${isActive ? 'text-white pl-1' : 'text-zinc-500 group-hover:text-zinc-400'}`}
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeWidth='2'
-                  >
-                    <path d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' strokeLinecap='round' strokeLinejoin='round' />
+                  <svg className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-400'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
-
-                  <span className='truncate flex-1 tracking-wide'>{chatObj.title || 'Untitled Session'}</span>
-
+                  
+                  <span className="truncate flex-1 tracking-normal">{chatObj.title || 'Untitled Session'}</span>
+                  
                   <button
-                    type='button'
-                    onClick={(event) => handleDeleteChat(event, chatObj.id)}
-                    aria-label='Delete chat'
-                    className='shrink-0 rounded-lg p-1.5 text-zinc-500 opacity-0 transition-all hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100 cursor-pointer'
+                    type="button"
+                    onClick={(e) => handleDeleteChat(e, chatObj.id)}
+                    className="shrink-0 rounded-lg p-1 text-zinc-500 opacity-0 transition hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100 cursor-pointer"
+                    title="Delete Chat"
                   >
-                    <svg className='w-3.5 h-3.5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-                      <path d='M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z' strokeLinecap='round' strokeLinejoin='round' />
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z" />
                     </svg>
                   </button>
                 </div>
@@ -204,17 +319,17 @@ const Dashboard = () => {
             })}
           </div>
 
-
-          <div ref={profileRef} className='relative mt-3 border-t border-white/[0.07] pt-3'>
+          {/* User Account / Profile Section */}
+          <div ref={profileRef} className="relative mt-3 border-t border-white/[0.08] pt-3">
             {isProfileOpen && (
-              <div className='absolute bottom-full left-0 mb-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 shadow-[0_10px_30px_rgba(0,0,0,0.7)] backdrop-blur-xl'>
+              <div className="absolute bottom-full left-0 mb-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl">
                 <button
-                  type='button'
+                  type="button"
                   onClick={() => { setIsProfileOpen(false); handleLogout() }}
-                  className='flex w-full items-center gap-2.5 px-4 py-3 text-left text-xs font-medium text-red-400 transition-colors hover:bg-red-500/10 cursor-pointer'
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-red-400 hover:bg-red-500/10 cursor-pointer"
                 >
-                  <svg className='h-3.5 w-3.5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-                    <path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9' strokeLinecap='round' strokeLinejoin='round' />
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
                   </svg>
                   Log out
                 </button>
@@ -222,178 +337,197 @@ const Dashboard = () => {
             )}
 
             <button
-              type='button'
+              type="button"
               onClick={() => setIsProfileOpen((open) => !open)}
-              className='flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition-colors hover:bg-white/[0.05] cursor-pointer'
+              className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 hover:bg-white/[0.05] cursor-pointer transition"
             >
-              <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-zinc-200 to-zinc-400 text-xs font-semibold text-black'>
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-zinc-200 to-zinc-400 text-xs font-bold text-black shadow-inner">
                 {(user?.username || '?').slice(0, 1).toUpperCase()}
               </div>
-              <div className='min-w-0 flex-1'>
-                <p className='truncate text-xs font-medium text-zinc-100'>{user?.username || 'Account'}</p>
-                <p className='truncate text-[10px] text-zinc-500'>{user?.email || ''}</p>
+              <div className="min-w-0 flex-1 text-left">
+                <p className="truncate text-sm font-medium text-zinc-200">{user?.username || 'Account'}</p>
+                <p className="truncate text-[11px] text-zinc-500">{user?.email || 'Connected'}</p>
               </div>
-              <svg className='h-3.5 w-3.5 shrink-0 text-zinc-500' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-                <path d='M8 9l4-4 4 4M8 15l4 4 4-4' strokeLinecap='round' strokeLinejoin='round' />
+              <svg className="h-4 w-4 shrink-0 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M8 9l4-4 4 4M8 15l4 4 4-4" />
               </svg>
             </button>
           </div>
         </aside>
 
-      <section className='relative flex h-full min-w-0 flex-1 flex-col items-center justify-between'>
+        {/* ---------------------------------------------------- */}
+        {/* MAIN CONSOLE & CHAT STAGE                            */}
+        {/* ---------------------------------------------------- */}
+        <section className="relative flex h-full min-w-0 flex-1 flex-col items-center justify-between">
 
-        <div className='w-full flex items-center justify-end px-4 py-2 z-20'>
-          {!hasMessages && <span className='text-[10px] font-semibold text-zinc-500 tracking-[0.2em]'>SECURE NETWORK</span>}
-        </div>
+          {/* Top Status Header */}
+          <div className="w-full flex items-center justify-end px-6 py-4 z-30">
+            <span className="text-[10px] font-semibold text-zinc-500 tracking-[0.2em] uppercase">SECURE ENCLAVE</span>
+          </div>
 
-        {hasMessages ? (
-          <div className='messages flex-1 w-full space-y-6 overflow-y-auto px-4 md:px-12 pb-28 pt-4'>
-            {activeMessages.map((message, index) => (
-              <div
-                key={index}
-                className={`max-w-[75%] w-fit text-[15px] leading-relaxed tracking-wide ${message.role === 'user'
-                  ? 'ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/5 px-6 py-4 text-zinc-100 backdrop-blur-md shadow-lg'
-                  : 'mr-auto px-2 py-4 text-zinc-300'
+          {/* Feed Stage: Messages vs Hero */}
+          {hasMessages ? (
+            <div className="messages flex-1 w-full max-w-4xl space-y-6 overflow-y-auto px-4 md:px-8 pb-32 pt-2">
+              {activeMessages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex gap-3 text-[15px] leading-relaxed ${
+                    message.role === 'user' ? 'justify-end' : 'justify-start'
                   }`}
-              >
-                {message.role === 'user' ? (
-                  <p>{message.content}</p>
-                ) : (
-                  <ReactMarkdown
-                    components={{
-                      p: ({ children }) => <p className='mb-4 last:mb-0 font-light leading-7'>{children}</p>,
-                      ul: ({ children }) => <ul className='mb-4 list-disc pl-5 space-y-2 text-zinc-400'>{children}</ul>,
-                      ol: ({ children }) => <ol className='mb-4 list-decimal pl-5 space-y-2 text-zinc-400'>{children}</ol>,
-                      code: ({ children }) => <code className='rounded-md bg-white/10 px-1.5 py-0.5 text-sm font-mono text-zinc-200'>{children}</code>,
-                      pre: ({ children }) => <pre className='mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/50 p-4 shadow-inner'>{children}</pre>
-                    }}
-                    remarkPlugins={[remarkGfm]}
+                >
+                  <div
+                    className={`rounded-3xl transition-all ${
+                      message.role === 'user'
+                        ? 'ml-auto max-w-[78%] bg-zinc-800/80 border border-white/10 text-zinc-100 px-6 py-4 rounded-br-sm backdrop-blur-md'
+                        : 'mr-auto max-w-[88%] bg-transparent text-zinc-200 px-2 py-2 w-full'
+                    }`}
                   >
-                    {message.content}
-                  </ReactMarkdown>
-                )}
-              </div>
-            ))}
+                    {message.role === 'user' ? (
+                      <p>{message.content}</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {/* Markdown Output */}
+                        <ReactMarkdown
+                          components={{
+                            p: ({ children }) => <p className="mb-3 last:mb-0 font-normal leading-relaxed text-zinc-200">{children}</p>,
+                            ul: ({ children }) => <ul className="mb-3 list-disc pl-5 space-y-1.5 text-zinc-300">{children}</ul>,
+                            ol: ({ children }) => <ol className="mb-3 list-decimal pl-5 space-y-1.5 text-zinc-300">{children}</ol>,
+                            table: ({ children }) => (
+                              <div className="my-3 overflow-x-auto rounded-xl border border-white/10 bg-zinc-950/80 p-1">
+                                <table className="w-full text-left text-xs text-zinc-300 border-collapse">{children}</table>
+                              </div>
+                            ),
+                            th: ({ children }) => <th className="border-b border-white/10 bg-white/[0.04] px-4 py-2.5 font-semibold text-white">{children}</th>,
+                            td: ({ children }) => <td className="border-b border-white/5 px-4 py-2 text-zinc-300">{children}</td>,
+                            code: ({ children }) => <code className="rounded-lg bg-white/10 px-2 py-0.5 text-xs font-mono text-zinc-200 border border-white/5">{children}</code>,
+                            pre: ({ children }) => <pre className="mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/60 p-4 font-mono text-xs shadow-inner">{children}</pre>
+                          }}
+                          remarkPlugins={[remarkGfm]}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
 
-            {pendingMessage && (
-              <div className='max-w-[75%] w-fit ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/5 px-6 py-4 text-zinc-100 backdrop-blur-md shadow-lg text-[15px] leading-relaxed tracking-wide'>
-                <p>{pendingMessage}</p>
-              </div>
-            )}
+                        {/* Copy Response Action Button */}
+                        <div className="flex items-center pt-1 text-zinc-500">
+                          <button
+                            type="button"
+                            onClick={() => handleCopyMessage(message.content, index)}
+                            className="flex items-center gap-1.5 p-1.5 rounded-lg hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer"
+                            title="Copy message"
+                          >
+                            {copiedIndex === index ? (
+                              <svg className="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
 
-            {isSending && (
-              <div className='mr-auto flex items-center gap-1.5 px-2 py-4'>
-                <span className='h-2 w-2 rounded-full bg-zinc-400 typing-dot' />
-                <span className='h-2 w-2 rounded-full bg-zinc-400 typing-dot' style={{ animationDelay: '0.15s' }} />
-                <span className='h-2 w-2 rounded-full bg-zinc-400 typing-dot' style={{ animationDelay: '0.3s' }} />
-              </div>
-            )}
+              {/* Optimistic Pending User Message */}
+              {pendingMessage && (
+                <div className="max-w-[78%] w-fit ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/10 px-6 py-4 text-zinc-100 backdrop-blur-md text-[15px]">
+                  <p>{pendingMessage}</p>
+                </div>
+              )}
 
-            <div ref={messagesEndRef} className='h-4' />
-          </div>
-        ) : (
-          <div className='flex-1 flex flex-col items-center justify-center -mt-16 z-10 w-full animate-fade-in text-center px-4'>
-            <h2 className='text-3xl md:text-5xl font-medium tracking-tight text-white mb-4 drop-shadow-2xl'>
-              Built for the Next<br />Generation of Chat.
-            </h2>
-            <p className='text-sm md:text-base text-zinc-400 max-w-lg font-light leading-relaxed mb-8'>
-              A powerful digital identity created to bring trust, innovation, and simplicity to your workflow.
-            </p>
+              {/* Engine Processing Telemetry Dot Loader */}
+              {isSending && (
+                <div className="mr-auto flex items-center gap-1.5 px-3 py-4">
+                  <span className="h-2 w-2 rounded-full bg-zinc-400 animate-pulse" />
+                  <span className="h-2 w-2 rounded-full bg-zinc-500 animate-pulse" style={{ animationDelay: '0.2s' }} />
+                  <span className="h-2 w-2 rounded-full bg-zinc-600 animate-pulse" style={{ animationDelay: '0.4s' }} />
+                </div>
+              )}
 
-            <form
-              onSubmit={handleSubmitMessage}
-              className='relative flex items-center w-full max-w-2xl rounded-full bg-zinc-950/80 border border-white/10 backdrop-blur-2xl p-2 pl-5 shadow-[0_15px_35px_rgba(0,0,0,0.9)] focus-within:border-white/25 transition-all'
-            >
-              <button type='button' className='p-1.5 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer'>
-                <svg className='w-5 h-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-                  <path d='M12 5v14M5 12h14' strokeLinecap='round' />
-                </svg>
-              </button>
-
-              <input
-                ref={inputRef}
-                type='text'
-                value={chatInput}
-                onChange={(event) => setChatInput(event.target.value)}
-                placeholder='Enter the New Era of AI...'
-                disabled={isSending}
-                className='flex-1 bg-transparent px-3 py-2 text-sm md:text-base text-zinc-100 placeholder:text-zinc-500 outline-none font-normal disabled:opacity-50'
-              />
-
-              <div className='flex items-center'>
-                {chatInput.trim() ? (
-                  <button
-                    type='submit'
-                    disabled={isSending}
-                    className='flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-b from-zinc-200 to-zinc-400 text-black hover:scale-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)] cursor-pointer disabled:opacity-40 disabled:pointer-events-none'
-                  >
-                    <svg className='w-4 h-4 fill-current' viewBox='0 0 24 24'>
-                      <path d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z' />
-                    </svg>
-                  </button>
-                ) : (
-                  <button type='button' className='flex items-center justify-center h-10 w-10 rounded-full text-zinc-500 hover:text-zinc-300 transition-colors'>
-                    <svg className='w-5 h-5' viewBox='0 0 24 24' fill='currentColor'>
-                      <path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z' />
-                      <path d='M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z' />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            </form>
-
-            {sendError && (
-              <p className='mt-3 text-center text-xs text-red-400'>{sendError}</p>
-            )}
-
-            <div className='mt-8 text-[11px] uppercase tracking-[0.25em] text-zinc-500 font-light'>
-              Future-ready • Decentralized • Connected
+              {/* Scroll Anchor */}
+              <div ref={messagesEndRef} className="h-4" />
             </div>
-          </div>
-        )}
+          ) : (
+            /* Hero Stage (Zero-Noise Typography) */
+            <div className="flex-1 flex flex-col items-center justify-center -mt-8 z-10 w-full max-w-4xl text-center px-4 animate-fade-in">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-zinc-900/60 px-3.5 py-1 mb-6 backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)] animate-pulse" />
+                <span className="text-[10px] font-mono tracking-[0.18em] uppercase text-zinc-400">
+                  Zero-Noise Architecture
+                </span>
+              </div>
 
-        {hasMessages && (
-          <div className='w-full max-w-3xl px-4 pb-2 z-20'>
+              <h2
+                style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif" }}
+                className="pb-2 text-4xl sm:text-5xl md:text-6xl font-semibold tracking-[-0.035em] leading-[1.12] text-transparent bg-clip-text bg-[linear-gradient(180deg,#FFFFFF_0%,#E4E4E7_40%,#71717A_100%)] drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"
+              >
+                High Signal. Zero Noise.
+              </h2>
+
+              <p
+                style={{ fontFamily: "'Inter', sans-serif" }}
+                className="mt-3 text-xs sm:text-sm text-zinc-400 max-w-md font-light leading-relaxed tracking-[-0.01em]"
+              >
+                Instant answers, structured data, and zero conversational filler.
+              </p>
+            </div>
+          )}
+
+          {/* ---------------------------------------------------- */}
+          {/* CONSOLE INPUT DOCK                                   */}
+          {/* ---------------------------------------------------- */}
+          <div className="w-full max-w-3xl px-4 pb-5 z-20">
             <form
               onSubmit={handleSubmitMessage}
-              className='relative flex items-center w-full rounded-full bg-zinc-950/90 border border-white/10 backdrop-blur-2xl p-2 pl-5 shadow-[0_15px_35px_rgba(0,0,0,0.9)] focus-within:border-white/25 transition-all'
+              className="relative flex flex-col w-full rounded-3xl bg-zinc-950/80 border border-white/10 backdrop-blur-2xl p-3 shadow-[0_20px_50px_rgba(0,0,0,0.9)] focus-within:border-white/25 transition-all"
             >
-              <button type='button' className='p-1.5 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer'>
-                <svg className='w-5 h-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-                  <path d='M12 5v14M5 12h14' strokeLinecap='round' />
-                </svg>
-              </button>
-
-              <input
+              <textarea
                 ref={inputRef}
-                type='text'
+                rows={1}
                 value={chatInput}
-                onChange={(event) => setChatInput(event.target.value)}
-                placeholder='Type a message...'
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSubmitMessage(e)
+                  }
+                }}
+                placeholder="Ask directly..."
                 disabled={isSending}
-                className='flex-1 bg-transparent px-3 py-2 text-sm md:text-base text-zinc-100 placeholder:text-zinc-500 outline-none font-normal disabled:opacity-50'
+                className="w-full resize-none bg-transparent px-3 py-1.5 text-sm md:text-[15px] text-zinc-100 placeholder:text-zinc-600 outline-none font-normal max-h-32 custom-scrollbar"
               />
 
-              <button
-                type='submit'
-                disabled={!chatInput.trim() || isSending}
-                className='flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-b from-zinc-200 to-zinc-400 text-black disabled:opacity-20 transition-all cursor-pointer'
-              >
-                <svg className='w-4 h-4 fill-current' viewBox='0 0 24 24'>
-                  <path d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z' />
-                </svg>
-              </button>
+              <div className="flex items-center justify-between pt-2 px-1 border-t border-white/[0.04] mt-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono text-zinc-500 bg-white/[0.03] px-2 py-0.5 rounded-md border border-white/5">
+                    ⚡ 100% Signal Output
+                  </span>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim() || isSending}
+                  className="flex items-center justify-center h-8 px-5 rounded-xl bg-gradient-to-b from-zinc-100 via-zinc-200 to-zinc-400 text-black text-xs font-semibold uppercase tracking-wider disabled:opacity-20 hover:scale-105 active:scale-95 transition cursor-pointer shadow-[0_0_12px_rgba(255,255,255,0.2)]"
+                >
+                  {isSending ? '...' : 'Send'}
+                </button>
+              </div>
             </form>
 
+            {/* Error Telemetry */}
             {sendError && (
-              <p className='mt-2 text-center text-xs text-red-400'>{sendError}</p>
+              <p className="mt-2 text-center text-xs text-red-400">{sendError}</p>
             )}
           </div>
-        )}
 
-      </section>
-    </section>
-    </main >
+        </section>
+      </div>
+    </main>
   )
 }
 
