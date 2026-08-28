@@ -113,7 +113,7 @@ const Dashboard = () => {
         <aside className='hidden md:flex w-72 shrink-0 flex-col rounded-3xl bg-zinc-950/70 border border-white/[0.07] backdrop-blur-2xl p-5 shadow-2xl'>
           <div className='flex items-center gap-3 mb-6 px-2 pt-1'>
             <div className='h-3.5 w-3.5 rounded-full bg-gradient-to-b from-white to-zinc-400 shadow-[0_0_12px_rgba(255,255,255,0.6)] ring-2 ring-white/10' />
-            <h1 className='text-base font-semibold tracking-wide text-zinc-100'>Elix</h1>
+            <h1 className='text-base font-semibold tracking-wide text-zinc-100'>Elix.ai</h1>
           </div>
 
           <button

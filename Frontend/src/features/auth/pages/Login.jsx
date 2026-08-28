@@ -32,7 +32,7 @@ const Login = () => {
 
   return (
     <main className="relative flex min-h-screen w-full items-center justify-center bg-[#040507] px-4 py-10 font-sans text-zinc-100 selection:bg-zinc-700 selection:text-white overflow-hidden select-none">
-      
+
       {/* Dynamic Breathing Keyframes */}
       <style>{`
         @keyframes dynamicSilverGlow {
@@ -56,7 +56,7 @@ const Login = () => {
       <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
         {/* Outer Silver Layer */}
         <div className="animate-silver-ambient absolute h-[500px] w-[800px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.18)_0%,rgba(180,185,200,0.06)_45%,transparent_70%)]" />
-        
+
         {/* Core Spotlight */}
         <div className="animate-silver-ambient absolute h-[260px] w-[420px] rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.28)_0%,rgba(200,205,220,0.06)_50%,transparent_70%)]" style={{ animationDelay: '-2.5s' }} />
       </div>
@@ -70,13 +70,12 @@ const Login = () => {
 
       {/* ================= GLASS LOGIN CARD ================= */}
       <div className="relative z-10 w-full max-w-md rounded-3xl border border-white/[0.08] bg-zinc-950/70 p-8 md:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-all">
-        
+
         {/* Brand Beacon */}
         <div className="mb-6 flex items-center gap-2.5">
           <div className="h-3.5 w-3.5 rounded-full bg-gradient-to-b from-white to-zinc-400 shadow-[0_0_12px_rgba(255,255,255,0.6)] ring-2 ring-white/10" />
-          <span className="text-xs font-semibold tracking-widest uppercase text-zinc-400">Identity Portal</span>
+          <span className="text-xs font-semibold tracking-widest uppercase text-zinc-400">Elix.ai</span>
         </div>
-
         {/* Title Header */}
         <h1 className="text-2xl md:text-3xl font-medium tracking-tight text-white drop-shadow-md">
           Welcome Back
