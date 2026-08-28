@@ -17,6 +17,7 @@ const Dashboard = () => {
 
   const messagesEndRef = useRef(null)
   const sendingRef = useRef(false)
+  const inputRef = useRef(null)
 
   useEffect(() => {
     chat.initializeSocketConnection()
@@ -32,34 +33,40 @@ const Dashboard = () => {
     }
   }, [activeMessages, hasMessages, isSending])
 
+  useEffect(() => {
+    if (!isSending) {
+      inputRef.current?.focus()
+    }
+  }, [isSending])
+
   const handleNewSession = () => {
     dispatch(setCurrentChatId(null))
     setChatInput('')
     setSendError(null)
   }
 
- const handleSubmitMessage = async (event) => {
-  event.preventDefault()
-  const trimmedMessage = chatInput.trim()
-  if (!trimmedMessage || sendingRef.current) return   // ← ref check (React state nahi)
+  const handleSubmitMessage = async (event) => {
+    event.preventDefault()
+    const trimmedMessage = chatInput.trim()
+    if (!trimmedMessage || sendingRef.current) return   // ← ref check (React state nahi)
 
-  sendingRef.current = true   // ← NEW: turant lock lagao
-  setSendError(null)
-  setPendingMessage(trimmedMessage)
-  setChatInput('')
-  setIsSending(true)
+    sendingRef.current = true   // ← NEW: turant lock lagao
+    setSendError(null)
+    setPendingMessage(trimmedMessage)
+    setChatInput('')
+    setIsSending(true)
 
-  try {
-    await chat.handleSendMessage({ message: trimmedMessage, chatId: currentChatId })
-  } catch (err) {
-    setSendError('Message could not be sent. Please try again.')
-    setChatInput(trimmedMessage)
-  } finally {
-    sendingRef.current = false   // ← NEW: lock hatao
-    setIsSending(false)
-    setPendingMessage(null)
+    try {
+      await chat.handleSendMessage({ message: trimmedMessage, chatId: currentChatId })
+    } catch (err) {
+      setSendError('Message could not be sent. Please try again.')
+      setChatInput(trimmedMessage)
+    } finally {
+      sendingRef.current = false   // ← NEW: lock hatao
+      setIsSending(false)
+      setPendingMessage(null)
+    }
   }
-}
 
   const openChat = (chatId) => {
     chat.handleOpenChat(chatId, chats)
@@ -130,11 +137,10 @@ const Dashboard = () => {
                   key={index}
                   onClick={() => openChat(chatObj.id)}
                   type='button'
-                  className={`group relative w-full flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left text-xs transition-all duration-200 cursor-pointer ${
-                    isActive
+                  className={`group relative w-full flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left text-xs transition-all duration-200 cursor-pointer ${isActive
                       ? 'bg-white/[0.08] text-white font-medium border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]'
                       : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]'
-                  }`}
+                    }`}
                 >
                   {isActive && (
                     <div className='absolute left-1.5 top-1/2 -translate-y-1/2 h-4 w-1 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]' />
@@ -147,7 +153,7 @@ const Dashboard = () => {
                     stroke='currentColor'
                     strokeWidth='2'
                   >
-                    <path d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' strokeLinecap='round' strokeLinejoin='round'/>
+                    <path d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' strokeLinecap='round' strokeLinejoin='round' />
                   </svg>
 
                   <span className='truncate flex-1 tracking-wide'>{chatObj.title || 'Untitled Session'}</span>
@@ -168,11 +174,10 @@ const Dashboard = () => {
               {activeMessages.map((message, index) => (
                 <div
                   key={index}
-                  className={`max-w-[75%] w-fit text-[15px] leading-relaxed tracking-wide ${
-                    message.role === 'user'
+                  className={`max-w-[75%] w-fit text-[15px] leading-relaxed tracking-wide ${message.role === 'user'
                       ? 'ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/5 px-6 py-4 text-zinc-100 backdrop-blur-md shadow-lg'
                       : 'mr-auto px-2 py-4 text-zinc-300'
-                  }`}
+                    }`}
                 >
                   {message.role === 'user' ? (
                     <p>{message.content}</p>
@@ -212,7 +217,7 @@ const Dashboard = () => {
           ) : (
             <div className='flex-1 flex flex-col items-center justify-center -mt-16 z-10 w-full animate-fade-in text-center px-4'>
               <h2 className='text-3xl md:text-5xl font-medium tracking-tight text-white mb-4 drop-shadow-2xl'>
-                Built for the Next<br/>Generation of Chat.
+                Built for the Next<br />Generation of Chat.
               </h2>
               <p className='text-sm md:text-base text-zinc-400 max-w-lg font-light leading-relaxed mb-8'>
                 A powerful digital identity created to bring trust, innovation, and simplicity to your workflow.
@@ -224,11 +229,12 @@ const Dashboard = () => {
               >
                 <button type='button' className='p-1.5 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer'>
                   <svg className='w-5 h-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-                    <path d='M12 5v14M5 12h14' strokeLinecap='round'/>
+                    <path d='M12 5v14M5 12h14' strokeLinecap='round' />
                   </svg>
                 </button>
 
                 <input
+                  ref={inputRef}
                   type='text'
                   value={chatInput}
                   onChange={(event) => setChatInput(event.target.value)}
@@ -251,8 +257,8 @@ const Dashboard = () => {
                   ) : (
                     <button type='button' className='flex items-center justify-center h-10 w-10 rounded-full text-zinc-500 hover:text-zinc-300 transition-colors'>
                       <svg className='w-5 h-5' viewBox='0 0 24 24' fill='currentColor'>
-                        <path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z'/>
-                        <path d='M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z'/>
+                        <path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z' />
+                        <path d='M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z' />
                       </svg>
                     </button>
                   )}
@@ -277,11 +283,12 @@ const Dashboard = () => {
               >
                 <button type='button' className='p-1.5 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer'>
                   <svg className='w-5 h-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-                    <path d='M12 5v14M5 12h14' strokeLinecap='round'/>
+                    <path d='M12 5v14M5 12h14' strokeLinecap='round' />
                   </svg>
                 </button>
 
                 <input
+                  ref={inputRef}
                   type='text'
                   value={chatInput}
                   onChange={(event) => setChatInput(event.target.value)}
