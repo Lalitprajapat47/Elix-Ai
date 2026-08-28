@@ -2,22 +2,27 @@ import React, { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSelector, useDispatch } from 'react-redux'
 import { useChat } from '../hooks/useChat'
+import { useAuth } from '../../auth/hook/useAuth'
 import remarkGfm from 'remark-gfm'
 import { setCurrentChatId } from '../chat.slice'
 
 const Dashboard = () => {
   const dispatch = useDispatch()
   const chat = useChat()
+  const { handleLogout } = useAuth()
+  const user = useSelector((state) => state.auth.user)
   const [chatInput, setChatInput] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [pendingMessage, setPendingMessage] = useState(null)
   const [sendError, setSendError] = useState(null)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const chats = useSelector((state) => state.chat.chats)
   const currentChatId = useSelector((state) => state.chat.currentChatId)
 
   const messagesEndRef = useRef(null)
   const sendingRef = useRef(false)
   const inputRef = useRef(null)
+  const profileRef = useRef(null)
 
   useEffect(() => {
     chat.initializeSocketConnection()
@@ -38,6 +43,19 @@ const Dashboard = () => {
       inputRef.current?.focus()
     }
   }, [isSending])
+
+  useEffect(() => {
+    if (!isProfileOpen) return
+
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isProfileOpen])
 
   const handleNewSession = () => {
     dispatch(setCurrentChatId(null))
@@ -151,8 +169,8 @@ const Dashboard = () => {
                   tabIndex={0}
                   onKeyDown={(event) => { if (event.key === 'Enter') openChat(chatObj.id) }}
                   className={`group relative w-full flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left text-xs transition-all duration-200 cursor-pointer ${isActive
-                      ? 'bg-white/[0.08] text-white font-medium border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]'
+                    ? 'bg-white/[0.08] text-white font-medium border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]'
                     }`}
                 >
                   {isActive && (
@@ -185,162 +203,197 @@ const Dashboard = () => {
               )
             })}
           </div>
+
+
+          <div ref={profileRef} className='relative mt-3 border-t border-white/[0.07] pt-3'>
+            {isProfileOpen && (
+              <div className='absolute bottom-full left-0 mb-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 shadow-[0_10px_30px_rgba(0,0,0,0.7)] backdrop-blur-xl'>
+                <button
+                  type='button'
+                  onClick={() => { setIsProfileOpen(false); handleLogout() }}
+                  className='flex w-full items-center gap-2.5 px-4 py-3 text-left text-xs font-medium text-red-400 transition-colors hover:bg-red-500/10 cursor-pointer'
+                >
+                  <svg className='h-3.5 w-3.5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
+                    <path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9' strokeLinecap='round' strokeLinejoin='round' />
+                  </svg>
+                  Log out
+                </button>
+              </div>
+            )}
+
+            <button
+              type='button'
+              onClick={() => setIsProfileOpen((open) => !open)}
+              className='flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition-colors hover:bg-white/[0.05] cursor-pointer'
+            >
+              <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-zinc-200 to-zinc-400 text-xs font-semibold text-black'>
+                {(user?.username || '?').slice(0, 1).toUpperCase()}
+              </div>
+              <div className='min-w-0 flex-1'>
+                <p className='truncate text-xs font-medium text-zinc-100'>{user?.username || 'Account'}</p>
+                <p className='truncate text-[10px] text-zinc-500'>{user?.email || ''}</p>
+              </div>
+              <svg className='h-3.5 w-3.5 shrink-0 text-zinc-500' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
+                <path d='M8 9l4-4 4 4M8 15l4 4 4-4' strokeLinecap='round' strokeLinejoin='round' />
+              </svg>
+            </button>
+          </div>
         </aside>
 
-        <section className='relative flex h-full min-w-0 flex-1 flex-col items-center justify-between'>
+      <section className='relative flex h-full min-w-0 flex-1 flex-col items-center justify-between'>
 
-          <div className='w-full flex items-center justify-end px-4 py-2 z-20'>
-            {!hasMessages && <span className='text-[10px] font-semibold text-zinc-500 tracking-[0.2em]'>SECURE NETWORK</span>}
-          </div>
+        <div className='w-full flex items-center justify-end px-4 py-2 z-20'>
+          {!hasMessages && <span className='text-[10px] font-semibold text-zinc-500 tracking-[0.2em]'>SECURE NETWORK</span>}
+        </div>
 
-          {hasMessages ? (
-            <div className='messages flex-1 w-full space-y-6 overflow-y-auto px-4 md:px-12 pb-28 pt-4'>
-              {activeMessages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`max-w-[75%] w-fit text-[15px] leading-relaxed tracking-wide ${message.role === 'user'
-                      ? 'ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/5 px-6 py-4 text-zinc-100 backdrop-blur-md shadow-lg'
-                      : 'mr-auto px-2 py-4 text-zinc-300'
-                    }`}
-                >
-                  {message.role === 'user' ? (
-                    <p>{message.content}</p>
-                  ) : (
-                    <ReactMarkdown
-                      components={{
-                        p: ({ children }) => <p className='mb-4 last:mb-0 font-light leading-7'>{children}</p>,
-                        ul: ({ children }) => <ul className='mb-4 list-disc pl-5 space-y-2 text-zinc-400'>{children}</ul>,
-                        ol: ({ children }) => <ol className='mb-4 list-decimal pl-5 space-y-2 text-zinc-400'>{children}</ol>,
-                        code: ({ children }) => <code className='rounded-md bg-white/10 px-1.5 py-0.5 text-sm font-mono text-zinc-200'>{children}</code>,
-                        pre: ({ children }) => <pre className='mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/50 p-4 shadow-inner'>{children}</pre>
-                      }}
-                      remarkPlugins={[remarkGfm]}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
-                  )}
-                </div>
-              ))}
-
-              {pendingMessage && (
-                <div className='max-w-[75%] w-fit ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/5 px-6 py-4 text-zinc-100 backdrop-blur-md shadow-lg text-[15px] leading-relaxed tracking-wide'>
-                  <p>{pendingMessage}</p>
-                </div>
-              )}
-
-              {isSending && (
-                <div className='mr-auto flex items-center gap-1.5 px-2 py-4'>
-                  <span className='h-2 w-2 rounded-full bg-zinc-400 typing-dot' />
-                  <span className='h-2 w-2 rounded-full bg-zinc-400 typing-dot' style={{ animationDelay: '0.15s' }} />
-                  <span className='h-2 w-2 rounded-full bg-zinc-400 typing-dot' style={{ animationDelay: '0.3s' }} />
-                </div>
-              )}
-
-              <div ref={messagesEndRef} className='h-4' />
-            </div>
-          ) : (
-            <div className='flex-1 flex flex-col items-center justify-center -mt-16 z-10 w-full animate-fade-in text-center px-4'>
-              <h2 className='text-3xl md:text-5xl font-medium tracking-tight text-white mb-4 drop-shadow-2xl'>
-                Built for the Next<br />Generation of Chat.
-              </h2>
-              <p className='text-sm md:text-base text-zinc-400 max-w-lg font-light leading-relaxed mb-8'>
-                A powerful digital identity created to bring trust, innovation, and simplicity to your workflow.
-              </p>
-
-              <form
-                onSubmit={handleSubmitMessage}
-                className='relative flex items-center w-full max-w-2xl rounded-full bg-zinc-950/80 border border-white/10 backdrop-blur-2xl p-2 pl-5 shadow-[0_15px_35px_rgba(0,0,0,0.9)] focus-within:border-white/25 transition-all'
+        {hasMessages ? (
+          <div className='messages flex-1 w-full space-y-6 overflow-y-auto px-4 md:px-12 pb-28 pt-4'>
+            {activeMessages.map((message, index) => (
+              <div
+                key={index}
+                className={`max-w-[75%] w-fit text-[15px] leading-relaxed tracking-wide ${message.role === 'user'
+                  ? 'ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/5 px-6 py-4 text-zinc-100 backdrop-blur-md shadow-lg'
+                  : 'mr-auto px-2 py-4 text-zinc-300'
+                  }`}
               >
-                <button type='button' className='p-1.5 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer'>
-                  <svg className='w-5 h-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-                    <path d='M12 5v14M5 12h14' strokeLinecap='round' />
-                  </svg>
-                </button>
-
-                <input
-                  ref={inputRef}
-                  type='text'
-                  value={chatInput}
-                  onChange={(event) => setChatInput(event.target.value)}
-                  placeholder='Enter the New Era of AI...'
-                  disabled={isSending}
-                  className='flex-1 bg-transparent px-3 py-2 text-sm md:text-base text-zinc-100 placeholder:text-zinc-500 outline-none font-normal disabled:opacity-50'
-                />
-
-                <div className='flex items-center'>
-                  {chatInput.trim() ? (
-                    <button
-                      type='submit'
-                      disabled={isSending}
-                      className='flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-b from-zinc-200 to-zinc-400 text-black hover:scale-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)] cursor-pointer disabled:opacity-40 disabled:pointer-events-none'
-                    >
-                      <svg className='w-4 h-4 fill-current' viewBox='0 0 24 24'>
-                        <path d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z' />
-                      </svg>
-                    </button>
-                  ) : (
-                    <button type='button' className='flex items-center justify-center h-10 w-10 rounded-full text-zinc-500 hover:text-zinc-300 transition-colors'>
-                      <svg className='w-5 h-5' viewBox='0 0 24 24' fill='currentColor'>
-                        <path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z' />
-                        <path d='M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z' />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </form>
-
-              {sendError && (
-                <p className='mt-3 text-center text-xs text-red-400'>{sendError}</p>
-              )}
-
-              <div className='mt-8 text-[11px] uppercase tracking-[0.25em] text-zinc-500 font-light'>
-                Future-ready • Decentralized • Connected
+                {message.role === 'user' ? (
+                  <p>{message.content}</p>
+                ) : (
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <p className='mb-4 last:mb-0 font-light leading-7'>{children}</p>,
+                      ul: ({ children }) => <ul className='mb-4 list-disc pl-5 space-y-2 text-zinc-400'>{children}</ul>,
+                      ol: ({ children }) => <ol className='mb-4 list-decimal pl-5 space-y-2 text-zinc-400'>{children}</ol>,
+                      code: ({ children }) => <code className='rounded-md bg-white/10 px-1.5 py-0.5 text-sm font-mono text-zinc-200'>{children}</code>,
+                      pre: ({ children }) => <pre className='mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/50 p-4 shadow-inner'>{children}</pre>
+                    }}
+                    remarkPlugins={[remarkGfm]}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                )}
               </div>
-            </div>
-          )}
+            ))}
 
-          {hasMessages && (
-            <div className='w-full max-w-3xl px-4 pb-2 z-20'>
-              <form
-                onSubmit={handleSubmitMessage}
-                className='relative flex items-center w-full rounded-full bg-zinc-950/90 border border-white/10 backdrop-blur-2xl p-2 pl-5 shadow-[0_15px_35px_rgba(0,0,0,0.9)] focus-within:border-white/25 transition-all'
+            {pendingMessage && (
+              <div className='max-w-[75%] w-fit ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/5 px-6 py-4 text-zinc-100 backdrop-blur-md shadow-lg text-[15px] leading-relaxed tracking-wide'>
+                <p>{pendingMessage}</p>
+              </div>
+            )}
+
+            {isSending && (
+              <div className='mr-auto flex items-center gap-1.5 px-2 py-4'>
+                <span className='h-2 w-2 rounded-full bg-zinc-400 typing-dot' />
+                <span className='h-2 w-2 rounded-full bg-zinc-400 typing-dot' style={{ animationDelay: '0.15s' }} />
+                <span className='h-2 w-2 rounded-full bg-zinc-400 typing-dot' style={{ animationDelay: '0.3s' }} />
+              </div>
+            )}
+
+            <div ref={messagesEndRef} className='h-4' />
+          </div>
+        ) : (
+          <div className='flex-1 flex flex-col items-center justify-center -mt-16 z-10 w-full animate-fade-in text-center px-4'>
+            <h2 className='text-3xl md:text-5xl font-medium tracking-tight text-white mb-4 drop-shadow-2xl'>
+              Built for the Next<br />Generation of Chat.
+            </h2>
+            <p className='text-sm md:text-base text-zinc-400 max-w-lg font-light leading-relaxed mb-8'>
+              A powerful digital identity created to bring trust, innovation, and simplicity to your workflow.
+            </p>
+
+            <form
+              onSubmit={handleSubmitMessage}
+              className='relative flex items-center w-full max-w-2xl rounded-full bg-zinc-950/80 border border-white/10 backdrop-blur-2xl p-2 pl-5 shadow-[0_15px_35px_rgba(0,0,0,0.9)] focus-within:border-white/25 transition-all'
+            >
+              <button type='button' className='p-1.5 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer'>
+                <svg className='w-5 h-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
+                  <path d='M12 5v14M5 12h14' strokeLinecap='round' />
+                </svg>
+              </button>
+
+              <input
+                ref={inputRef}
+                type='text'
+                value={chatInput}
+                onChange={(event) => setChatInput(event.target.value)}
+                placeholder='Enter the New Era of AI...'
+                disabled={isSending}
+                className='flex-1 bg-transparent px-3 py-2 text-sm md:text-base text-zinc-100 placeholder:text-zinc-500 outline-none font-normal disabled:opacity-50'
+              />
+
+              <div className='flex items-center'>
+                {chatInput.trim() ? (
+                  <button
+                    type='submit'
+                    disabled={isSending}
+                    className='flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-b from-zinc-200 to-zinc-400 text-black hover:scale-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)] cursor-pointer disabled:opacity-40 disabled:pointer-events-none'
+                  >
+                    <svg className='w-4 h-4 fill-current' viewBox='0 0 24 24'>
+                      <path d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z' />
+                    </svg>
+                  </button>
+                ) : (
+                  <button type='button' className='flex items-center justify-center h-10 w-10 rounded-full text-zinc-500 hover:text-zinc-300 transition-colors'>
+                    <svg className='w-5 h-5' viewBox='0 0 24 24' fill='currentColor'>
+                      <path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z' />
+                      <path d='M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z' />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {sendError && (
+              <p className='mt-3 text-center text-xs text-red-400'>{sendError}</p>
+            )}
+
+            <div className='mt-8 text-[11px] uppercase tracking-[0.25em] text-zinc-500 font-light'>
+              Future-ready • Decentralized • Connected
+            </div>
+          </div>
+        )}
+
+        {hasMessages && (
+          <div className='w-full max-w-3xl px-4 pb-2 z-20'>
+            <form
+              onSubmit={handleSubmitMessage}
+              className='relative flex items-center w-full rounded-full bg-zinc-950/90 border border-white/10 backdrop-blur-2xl p-2 pl-5 shadow-[0_15px_35px_rgba(0,0,0,0.9)] focus-within:border-white/25 transition-all'
+            >
+              <button type='button' className='p-1.5 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer'>
+                <svg className='w-5 h-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
+                  <path d='M12 5v14M5 12h14' strokeLinecap='round' />
+                </svg>
+              </button>
+
+              <input
+                ref={inputRef}
+                type='text'
+                value={chatInput}
+                onChange={(event) => setChatInput(event.target.value)}
+                placeholder='Type a message...'
+                disabled={isSending}
+                className='flex-1 bg-transparent px-3 py-2 text-sm md:text-base text-zinc-100 placeholder:text-zinc-500 outline-none font-normal disabled:opacity-50'
+              />
+
+              <button
+                type='submit'
+                disabled={!chatInput.trim() || isSending}
+                className='flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-b from-zinc-200 to-zinc-400 text-black disabled:opacity-20 transition-all cursor-pointer'
               >
-                <button type='button' className='p-1.5 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer'>
-                  <svg className='w-5 h-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-                    <path d='M12 5v14M5 12h14' strokeLinecap='round' />
-                  </svg>
-                </button>
+                <svg className='w-4 h-4 fill-current' viewBox='0 0 24 24'>
+                  <path d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z' />
+                </svg>
+              </button>
+            </form>
 
-                <input
-                  ref={inputRef}
-                  type='text'
-                  value={chatInput}
-                  onChange={(event) => setChatInput(event.target.value)}
-                  placeholder='Type a message...'
-                  disabled={isSending}
-                  className='flex-1 bg-transparent px-3 py-2 text-sm md:text-base text-zinc-100 placeholder:text-zinc-500 outline-none font-normal disabled:opacity-50'
-                />
+            {sendError && (
+              <p className='mt-2 text-center text-xs text-red-400'>{sendError}</p>
+            )}
+          </div>
+        )}
 
-                <button
-                  type='submit'
-                  disabled={!chatInput.trim() || isSending}
-                  className='flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-b from-zinc-200 to-zinc-400 text-black disabled:opacity-20 transition-all cursor-pointer'
-                >
-                  <svg className='w-4 h-4 fill-current' viewBox='0 0 24 24'>
-                    <path d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z' />
-                  </svg>
-                </button>
-              </form>
-
-              {sendError && (
-                <p className='mt-2 text-center text-xs text-red-400'>{sendError}</p>
-              )}
-            </div>
-          )}
-
-        </section>
       </section>
-    </main>
+    </section>
+    </main >
   )
 }
 
