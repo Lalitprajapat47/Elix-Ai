@@ -48,9 +48,9 @@ const Dashboard = () => {
   const handleSubmitMessage = async (event) => {
     event.preventDefault()
     const trimmedMessage = chatInput.trim()
-    if (!trimmedMessage || sendingRef.current) return   // ← ref check (React state nahi)
+    if (!trimmedMessage || sendingRef.current) return
 
-    sendingRef.current = true   // ← NEW: turant lock lagao
+    sendingRef.current = true
     setSendError(null)
     setPendingMessage(trimmedMessage)
     setChatInput('')
@@ -62,7 +62,7 @@ const Dashboard = () => {
       setSendError('Message could not be sent. Please try again.')
       setChatInput(trimmedMessage)
     } finally {
-      sendingRef.current = false   // ← NEW: lock hatao
+      sendingRef.current = false
       setIsSending(false)
       setPendingMessage(null)
     }
@@ -70,6 +70,17 @@ const Dashboard = () => {
 
   const openChat = (chatId) => {
     chat.handleOpenChat(chatId, chats)
+  }
+
+  const handleDeleteChat = async (event, chatId) => {
+    event.stopPropagation()
+    const confirmed = window.confirm('Delete this chat? This cannot be undone.')
+    if (!confirmed) return
+    try {
+      await chat.handleDeleteChat(chatId)
+    } catch (err) {
+      // error is already reflected in chat state; nothing further to do here
+    }
   }
 
   return (
@@ -133,10 +144,12 @@ const Dashboard = () => {
             {Object.values(chats).map((chatObj, index) => {
               const isActive = chatObj.id === currentChatId
               return (
-                <button
+                <div
                   key={index}
                   onClick={() => openChat(chatObj.id)}
-                  type='button'
+                  role='button'
+                  tabIndex={0}
+                  onKeyDown={(event) => { if (event.key === 'Enter') openChat(chatObj.id) }}
                   className={`group relative w-full flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left text-xs transition-all duration-200 cursor-pointer ${isActive
                       ? 'bg-white/[0.08] text-white font-medium border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]'
                       : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]'
@@ -157,7 +170,18 @@ const Dashboard = () => {
                   </svg>
 
                   <span className='truncate flex-1 tracking-wide'>{chatObj.title || 'Untitled Session'}</span>
-                </button>
+
+                  <button
+                    type='button'
+                    onClick={(event) => handleDeleteChat(event, chatObj.id)}
+                    aria-label='Delete chat'
+                    className='shrink-0 rounded-lg p-1.5 text-zinc-500 opacity-0 transition-all hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100 cursor-pointer'
+                  >
+                    <svg className='w-3.5 h-3.5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
+                      <path d='M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z' strokeLinecap='round' strokeLinejoin='round' />
+                    </svg>
+                  </button>
+                </div>
               )
             })}
           </div>
@@ -240,7 +264,7 @@ const Dashboard = () => {
                   onChange={(event) => setChatInput(event.target.value)}
                   placeholder='Enter the New Era of AI...'
                   disabled={isSending}
-                  className='flex-1 bg-transparent px-3 py-2 text-sm md:text-base text-zinc-100 placeholder:text-zinc-500 outline-none font-normal'
+                  className='flex-1 bg-transparent px-3 py-2 text-sm md:text-base text-zinc-100 placeholder:text-zinc-500 outline-none font-normal disabled:opacity-50'
                 />
 
                 <div className='flex items-center'>
@@ -248,7 +272,7 @@ const Dashboard = () => {
                     <button
                       type='submit'
                       disabled={isSending}
-                      className='flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-b from-zinc-200 to-zinc-400 text-black hover:scale-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)] cursor-pointer'
+                      className='flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-b from-zinc-200 to-zinc-400 text-black hover:scale-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)] cursor-pointer disabled:opacity-40 disabled:pointer-events-none'
                     >
                       <svg className='w-4 h-4 fill-current' viewBox='0 0 24 24'>
                         <path d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z' />
