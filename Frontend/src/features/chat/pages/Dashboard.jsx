@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSelector, useDispatch } from 'react-redux'
 import remarkGfm from 'remark-gfm'
-import { FishSymbol } from 'lucide-react'
+import { FishSymbol, Send, Sparkles } from 'lucide-react'
 
 // Hooks & Actions
 import { useChat } from '../hooks/useChat'
@@ -28,8 +28,8 @@ const Dashboard = () => {
   const [isSending, setIsSending] = useState(false)
   const [pendingMessage, setPendingMessage] = useState(null)
   const [sendError, setSendError] = useState(null)
-  
-  // UI Panels & Tool Controls
+
+  // UI Panels & Controls
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
@@ -44,44 +44,36 @@ const Dashboard = () => {
   const inputRef = useRef(null)
   const profileRef = useRef(null)
 
-  // Derived Active State
   const activeMessages = (currentChatId && chats[currentChatId]?.messages) || []
   const hasMessages = activeMessages.length > 0 || isSending
 
   // ==========================================
-  // 4. SIDE EFFECTS & EVENT LISTENERS
+  // 4. SIDE EFFECTS
   // ==========================================
-
-  // Initialize Connection and Fetch Chats
   useEffect(() => {
     chat.initializeSocketConnection()
     chat.handleGetChats()
   }, [])
 
-  // Auto Scroll on Message Updates
   useEffect(() => {
     if (hasMessages) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [activeMessages, hasMessages, isSending])
 
-  // Maintain Input Focus
   useEffect(() => {
     if (!isSending) {
       inputRef.current?.focus()
     }
   }, [isSending])
 
-  // Profile Dropdown Outside-Click Handler
   useEffect(() => {
     if (!isProfileOpen) return
-
     const handleClickOutside = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false)
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isProfileOpen])
@@ -89,39 +81,31 @@ const Dashboard = () => {
   // ==========================================
   // 5. EVENT HANDLERS
   // ==========================================
-
-  // Reset to Clean Slate / New Session
   const handleNewSession = () => {
     dispatch(setCurrentChatId(null))
     setChatInput('')
     setSendError(null)
   }
 
-  // Open Chat by ID
   const openChat = (chatId) => {
     chat.handleOpenChat(chatId, chats)
   }
 
-  // Delete Session
   const handleDeleteChat = async (event, chatId) => {
     event.stopPropagation()
     const confirmed = window.confirm('Delete this session?')
     if (!confirmed) return
     try {
       await chat.handleDeleteChat(chatId)
-    } catch (err) {
-      // Error handled by redux state
-    }
+    } catch (err) {}
   }
 
-  // Copy AI Response to Clipboard
   const handleCopyMessage = (content, index) => {
     navigator.clipboard.writeText(content)
     setCopiedIndex(index)
     setTimeout(() => setCopiedIndex(null), 2000)
   }
 
-  // Send Message Payload
   const handleSubmitMessage = async (event, customMsg = null) => {
     if (event) event.preventDefault()
     const msgToSend = (customMsg || chatInput).trim()
@@ -145,18 +129,17 @@ const Dashboard = () => {
     }
   }
 
-  // Filtered Sessions List
   const filteredChats = Object.values(chats).filter((chatObj) =>
     (chatObj.title || 'Untitled Session').toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   // ==========================================
-  // 6. VIEW RENDER
+  // 6. RENDER
   // ==========================================
   return (
     <main className="relative flex h-screen w-full bg-[#040507] text-zinc-100 overflow-hidden font-sans select-none">
       
-      {/* Dynamic Keyframe Animations & Background Mesh */}
+      {/* ================= INLINE ANIMATIONS ================= */}
       <style>{`
         @keyframes dynamicSilverGlow {
           0%, 100% { opacity: 0.35; transform: scale(0.95); filter: blur(90px); }
@@ -165,18 +148,22 @@ const Dashboard = () => {
         .animate-silver-ambient {
           animation: dynamicSilverGlow 6s ease-in-out infinite;
         }
-        .bg-grid-mesh {
-          background-size: 40px 40px;
-          background-image: 
-            linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+
+        /* Continuous Rotating Border Beam */
+        @keyframes rotateBeam {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+        .animate-beam-spin {
+          animation: rotateBeam 6s linear infinite;
         }
       `}</style>
 
-      {/* Ambient Grid Layer */}
-      <div className="absolute inset-0 bg-grid-mesh pointer-events-none opacity-50" />
-
-      {/* Core Silver Fog Backdrop (Visible when idle) */}
+      {/* Core Silver Fog Backdrop */}
       {!hasMessages && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
           <div className="animate-silver-ambient absolute h-[580px] w-[900px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.18)_0%,rgba(160,165,180,0.06)_45%,transparent_75%)]" />
@@ -184,13 +171,12 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Reopen Sidebar Trigger (Floating Button) */}
+      {/* Reopen Sidebar Floating Trigger */}
       {!isSidebarOpen && (
         <button
           type="button"
           onClick={() => setIsSidebarOpen(true)}
           className="absolute left-5 top-5 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-zinc-950/80 text-zinc-400 backdrop-blur-xl transition hover:border-white/20 hover:text-white cursor-pointer shadow-xl"
-          title="Open Sidebar"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="3" y="3" width="18" height="18" rx="4" />
@@ -199,26 +185,24 @@ const Dashboard = () => {
         </button>
       )}
 
-      {/* App Workspace Shell */}
+      {/* Main Workspace Layout */}
       <div className="relative z-10 flex h-full w-full">
 
-        {/* ---------------------------------------------------- */}
-        {/* SIDEBAR NAVIGATION (Desktop Scale / 280px)            */}
-        {/* ---------------------------------------------------- */}
+        {/* ================= PRO-SCALE SIDEBAR ================= */}
         <aside
           className={`shrink-0 flex flex-col h-full bg-[#08090C] border-r border-white/[0.08] p-4 transition-all duration-300 ${
             isSidebarOpen ? 'w-[280px]' : 'hidden'
           }`}
         >
-          {/* Header Brand & Controls */}
+          {/* Header */}
           <div className="flex items-center justify-between mb-5 px-2 pt-1">
             <div className="flex items-center gap-3">
-              <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-white/[0.06] border border-white/10">
+              <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-white/[0.06] border border-white/10 shadow-sm">
                 <FishSymbol className="h-4 w-4 text-zinc-100" />
               </div>
               <span
-                style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif" }}
-                className="text-base font-semibold tracking-[-0.02em] text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-400"
+                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                className="text-base font-semibold tracking-[-0.02em] text-white"
               >
                 Elix<span className="text-zinc-500 font-light">.ai</span>
               </span>
@@ -229,7 +213,6 @@ const Dashboard = () => {
                 type="button"
                 onClick={() => setShowSearch(!showSearch)}
                 className="p-2 rounded-lg hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer"
-                title="Search Chats"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="7" />
@@ -241,7 +224,6 @@ const Dashboard = () => {
                 type="button"
                 onClick={() => setIsSidebarOpen(false)}
                 className="p-2 rounded-lg hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer"
-                title="Collapse Sidebar"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="18" height="18" rx="3" />
@@ -251,20 +233,20 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Quick Search Input */}
+          {/* Quick Search */}
           {showSearch && (
             <div className="mb-3 px-1 animate-fade-in">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search queries..."
+                placeholder="Search history..."
                 className="w-full rounded-xl border border-white/10 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-white/20"
               />
             </div>
           )}
 
-          {/* New Session Action */}
+          {/* New Session Button */}
           <button
             type="button"
             onClick={handleNewSession}
@@ -277,7 +259,7 @@ const Dashboard = () => {
             <span className="text-[11px] text-zinc-500 font-mono">⌘K</span>
           </button>
 
-          {/* History Section Heading */}
+          {/* Section Heading */}
           <div className="flex items-center justify-between px-2 mb-2">
             <span className="text-[11px] font-medium tracking-wider uppercase text-zinc-500">History</span>
           </div>
@@ -301,14 +283,11 @@ const Dashboard = () => {
                   <svg className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-400'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
-                  
                   <span className="truncate flex-1 tracking-normal">{chatObj.title || 'Untitled Session'}</span>
-                  
                   <button
                     type="button"
                     onClick={(e) => handleDeleteChat(e, chatObj.id)}
                     className="shrink-0 rounded-lg p-1 text-zinc-500 opacity-0 transition hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100 cursor-pointer"
-                    title="Delete Chat"
                   >
                     <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z" />
@@ -319,7 +298,7 @@ const Dashboard = () => {
             })}
           </div>
 
-          {/* User Account / Profile Section */}
+          {/* Profile Bar */}
           <div ref={profileRef} className="relative mt-3 border-t border-white/[0.08] pt-3">
             {isProfileOpen && (
               <div className="absolute bottom-full left-0 mb-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl">
@@ -355,19 +334,17 @@ const Dashboard = () => {
           </div>
         </aside>
 
-        {/* ---------------------------------------------------- */}
-        {/* MAIN CONSOLE & CHAT STAGE                            */}
-        {/* ---------------------------------------------------- */}
+        {/* ================= MAIN INTERFACE ================= */}
         <section className="relative flex h-full min-w-0 flex-1 flex-col items-center justify-between">
 
-          {/* Top Status Header */}
+          {/* Top Status */}
           <div className="w-full flex items-center justify-end px-6 py-4 z-30">
             <span className="text-[10px] font-semibold text-zinc-500 tracking-[0.2em] uppercase">SECURE ENCLAVE</span>
           </div>
 
-          {/* Feed Stage: Messages vs Hero */}
+          {/* Messages Feed */}
           {hasMessages ? (
-            <div className="messages flex-1 w-full max-w-4xl space-y-6 overflow-y-auto px-4 md:px-8 pb-32 pt-2">
+            <div className="messages flex-1 w-full max-w-4xl space-y-6 overflow-y-auto px-4 md:px-8 pb-36 pt-2">
               {activeMessages.map((message, index) => (
                 <div
                   key={index}
@@ -386,7 +363,6 @@ const Dashboard = () => {
                       <p>{message.content}</p>
                     ) : (
                       <div className="space-y-2">
-                        {/* Markdown Output */}
                         <ReactMarkdown
                           components={{
                             p: ({ children }) => <p className="mb-3 last:mb-0 font-normal leading-relaxed text-zinc-200">{children}</p>,
@@ -407,7 +383,7 @@ const Dashboard = () => {
                           {message.content}
                         </ReactMarkdown>
 
-                        {/* Copy Response Action Button */}
+                        {/* Copy Action */}
                         <div className="flex items-center pt-1 text-zinc-500">
                           <button
                             type="button"
@@ -433,14 +409,12 @@ const Dashboard = () => {
                 </div>
               ))}
 
-              {/* Optimistic Pending User Message */}
               {pendingMessage && (
                 <div className="max-w-[78%] w-fit ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/10 px-6 py-4 text-zinc-100 backdrop-blur-md text-[15px]">
                   <p>{pendingMessage}</p>
                 </div>
               )}
 
-              {/* Engine Processing Telemetry Dot Loader */}
               {isSending && (
                 <div className="mr-auto flex items-center gap-1.5 px-3 py-4">
                   <span className="h-2 w-2 rounded-full bg-zinc-400 animate-pulse" />
@@ -449,11 +423,10 @@ const Dashboard = () => {
                 </div>
               )}
 
-              {/* Scroll Anchor */}
               <div ref={messagesEndRef} className="h-4" />
             </div>
           ) : (
-            /* Hero Stage (Zero-Noise Typography) */
+            /* Hero Stage */
             <div className="flex-1 flex flex-col items-center justify-center -mt-8 z-10 w-full max-w-4xl text-center px-4 animate-fade-in">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-zinc-900/60 px-3.5 py-1 mb-6 backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
                 <span className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)] animate-pulse" />
@@ -463,7 +436,7 @@ const Dashboard = () => {
               </div>
 
               <h2
-                style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif" }}
+                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                 className="pb-2 text-4xl sm:text-5xl md:text-6xl font-semibold tracking-[-0.035em] leading-[1.12] text-transparent bg-clip-text bg-[linear-gradient(180deg,#FFFFFF_0%,#E4E4E7_40%,#71717A_100%)] drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"
               >
                 High Signal. Zero Noise.
@@ -478,46 +451,76 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* ---------------------------------------------------- */}
-          {/* CONSOLE INPUT DOCK                                   */}
-          {/* ---------------------------------------------------- */}
-          <div className="w-full max-w-3xl px-4 pb-5 z-20">
-            <form
-              onSubmit={handleSubmitMessage}
-              className="relative flex flex-col w-full rounded-3xl bg-zinc-950/80 border border-white/10 backdrop-blur-2xl p-3 shadow-[0_20px_50px_rgba(0,0,0,0.9)] focus-within:border-white/25 transition-all"
-            >
-              <textarea
-                ref={inputRef}
-                rows={1}
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSubmitMessage(e)
-                  }
-                }}
-                placeholder="Ask directly..."
-                disabled={isSending}
-                className="w-full resize-none bg-transparent px-3 py-1.5 text-sm md:text-[15px] text-zinc-100 placeholder:text-zinc-600 outline-none font-normal max-h-32 custom-scrollbar"
-              />
-
-              <div className="flex items-center justify-between pt-2 px-1 border-t border-white/[0.04] mt-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-zinc-500 bg-white/[0.03] px-2 py-0.5 rounded-md border border-white/5">
-                    ⚡ 100% Signal Output
-                  </span>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!chatInput.trim() || isSending}
-                  className="flex items-center justify-center h-8 px-5 rounded-xl bg-gradient-to-b from-zinc-100 via-zinc-200 to-zinc-400 text-black text-xs font-semibold uppercase tracking-wider disabled:opacity-20 hover:scale-105 active:scale-95 transition cursor-pointer shadow-[0_0_12px_rgba(255,255,255,0.2)]"
-                >
-                  {isSending ? '...' : 'Send'}
-                </button>
+          {/* =================================================================== */}
+          {/* 🌟 ANIMATED TRAVELING LASER BEAM INPUT CONSOLE (VIDEO EFFECT)      */}
+          {/* =================================================================== */}
+          <div className="w-full max-w-3xl px-4 pb-6 z-20">
+            <div className="relative w-full group">
+              
+              {/* 1. Outer Soft Atmospheric Aura Glow */}
+              <div className="absolute -inset-[2px] rounded-[30px] overflow-hidden pointer-events-none opacity-80 blur-xl transition-opacity group-focus-within:opacity-100">
+                <div 
+                  className="animate-beam-spin absolute -inset-[150%] origin-center"
+                  style={{
+                    background: 'conic-gradient(from 0deg, transparent 0%, #ff5722 15%, transparent 35%, #3b82f6 60%, #a855f7 75%, transparent 100%)'
+                  }}
+                />
               </div>
-            </form>
+
+              {/* 2. Sharp 1px Traveling Border Rim */}
+              <div className="absolute -inset-[1px] rounded-[26px] overflow-hidden pointer-events-none">
+                <div 
+                  className="animate-beam-spin absolute -inset-[150%] origin-center"
+                  style={{
+                    background: 'conic-gradient(from 0deg, transparent 0%, #ff7043 12%, transparent 30%, #60a5fa 55%, #c084fc 72%, transparent 100%)'
+                  }}
+                />
+              </div>
+
+              {/* 3. Main Glass Console Container */}
+              <form
+                onSubmit={handleSubmitMessage}
+                className="relative flex flex-col w-full rounded-[25px] bg-[#090a0f]/90 backdrop-blur-2xl p-3.5 shadow-[0_20px_60px_rgba(0,0,0,0.95)]"
+              >
+                {/* Input Textarea */}
+                <textarea
+                  ref={inputRef}
+                  rows={1}
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSubmitMessage(e)
+                    }
+                  }}
+                  placeholder="How can I help you?"
+                  disabled={isSending}
+                  className="w-full resize-none bg-transparent px-3 py-1.5 text-sm md:text-[15px] text-zinc-100 placeholder:text-zinc-500 outline-none font-normal max-h-32 custom-scrollbar"
+                />
+
+                {/* Bottom Bar: Mode Tag & Action Button */}
+                <div className="flex items-center justify-between pt-2.5 px-1 border-t border-white/[0.05] mt-1">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 bg-white/[0.04] px-2.5 py-1 rounded-xl border border-white/[0.08] backdrop-blur-md">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>Deep Reasoning</span>
+                    </span>
+                  </div>
+
+                  {/* Circular Glow Send Trigger */}
+                  <button
+                    type="submit"
+                    disabled={!chatInput.trim() || isSending}
+                    className="flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 text-white disabled:opacity-20 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.5)] border border-white/20"
+                    title="Send message"
+                  >
+                    <Send className="w-3.5 h-3.5 ml-0.5" />
+                  </button>
+                </div>
+              </form>
+
+            </div>
 
             {/* Error Telemetry */}
             {sendError && (
