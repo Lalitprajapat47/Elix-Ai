@@ -1,20 +1,29 @@
 import React, { useState } from 'react'
 import { Link, useNavigate, Navigate } from 'react-router'
-import { useAuth } from '../hook/useAuth'
 import { useSelector } from 'react-redux'
+import { FishSymbol } from 'lucide-react'
+
+// Hooks
+import { useAuth } from '../hook/useAuth'
 
 const Register = () => {
+  // ==========================================
+  // 1. STATE & HOOKS
+  // ==========================================
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
-  const user = useSelector(state => state.auth.user)
-  const loading = useSelector(state => state.auth.loading)
-  const error = useSelector(state => state.auth.error)
+  const user = useSelector((state) => state.auth.user)
+  const loading = useSelector((state) => state.auth.loading)
+  const error = useSelector((state) => state.auth.error)
 
   const { handleRegister } = useAuth()
   const navigate = useNavigate()
 
+  // ==========================================
+  // 2. FORM SUBMISSION
+  // ==========================================
   const submitForm = async (event) => {
     event.preventDefault()
 
@@ -28,23 +37,27 @@ const Register = () => {
     navigate('/login')
   }
 
+  // Redirect if already authenticated
   if (!loading && user) {
     return <Navigate to="/" replace />
   }
 
+  // ==========================================
+  // 3. RENDER
+  // ==========================================
   return (
     <main className="relative flex min-h-screen w-full items-center justify-center bg-[#040507] px-4 py-10 font-sans text-zinc-100 selection:bg-zinc-700 selection:text-white overflow-hidden select-none">
-
-      {/* Dynamic Breathing Keyframes */}
+      
+      {/* Dynamic Keyframes */}
       <style>{`
         @keyframes dynamicSilverGlow {
           0%, 100% {
-            opacity: 0.4;
+            opacity: 0.35;
             transform: scale(0.95);
             filter: blur(80px);
           }
           50% {
-            opacity: 0.75;
+            opacity: 0.70;
             transform: scale(1.10);
             filter: blur(95px);
           }
@@ -56,10 +69,7 @@ const Register = () => {
 
       {/* ================= BACKGROUND AMBIENT GLOW ================= */}
       <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-        {/* Outer Silver Layer */}
         <div className="animate-silver-ambient absolute h-[500px] w-[800px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.18)_0%,rgba(180,185,200,0.06)_45%,transparent_70%)]" />
-
-        {/* Core Spotlight */}
         <div className="animate-silver-ambient absolute h-[260px] w-[420px] rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.28)_0%,rgba(200,205,220,0.06)_50%,transparent_70%)]" style={{ animationDelay: '-2.5s' }} />
       </div>
 
@@ -72,12 +82,20 @@ const Register = () => {
 
       {/* ================= GLASS REGISTER CARD ================= */}
       <div className="relative z-10 w-full max-w-md rounded-3xl border border-white/[0.08] bg-zinc-950/70 p-8 md:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-all">
-
-        {/* Brand Beacon */}
-        <div className="mb-6 flex items-center gap-2.5">
-          <div className="h-3.5 w-3.5 rounded-full bg-gradient-to-b from-white to-zinc-400 shadow-[0_0_12px_rgba(255,255,255,0.6)] ring-2 ring-white/10" />
-          <span className="text-xs font-semibold tracking-widest uppercase text-zinc-400">Elix.ai</span>
+        
+        {/* Brand Header with FishSymbol Logo */}
+        <div className="mb-6 flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.06] border border-white/10 shadow-sm">
+            <FishSymbol className="h-4 w-4 text-zinc-100" />
+          </div>
+          <span
+            style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif" }}
+            className="text-base font-semibold tracking-[-0.02em] text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-400"
+          >
+            Elix<span className="text-zinc-500 font-light">.ai</span>
+          </span>
         </div>
+
         {/* Title Header */}
         <h1 className="text-2xl md:text-3xl font-medium tracking-tight text-white drop-shadow-md">
           Create Account
