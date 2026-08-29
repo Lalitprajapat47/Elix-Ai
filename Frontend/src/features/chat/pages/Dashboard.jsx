@@ -30,7 +30,9 @@ const Dashboard = () => {
   const [sendError, setSendError] = useState(null)
 
   // UI Panels & Controls
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() =>
+    typeof window === 'undefined' ? true : window.innerWidth >= 768
+  )
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -83,14 +85,22 @@ const Dashboard = () => {
   // ==========================================
   // 5. EVENT HANDLERS
   // ==========================================
+  const closeSidebarOnMobile = () => {
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false)
+    }
+  }
+
   const handleNewSession = () => {
     dispatch(setCurrentChatId(null))
     setChatInput('')
     setSendError(null)
+    closeSidebarOnMobile()
   }
 
   const openChat = (chatId) => {
     chat.handleOpenChat(chatId, chats)
+    closeSidebarOnMobile()
   }
 
   const handleDeleteChat = async (event, chatId) => {
@@ -214,11 +224,19 @@ const Dashboard = () => {
       )}
 
       {/* Main Workspace Layout */}
+      {isSidebarOpen && (
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+        />
+      )}
+
       <div className="relative z-10 flex h-full w-full">
 
-        {/* ================= PRO-SCALE SIDEBAR ================= */}
         <aside
-          className={`shrink-0 flex flex-col h-full bg-[#08090C] border-r border-white/[0.08] p-4 transition-all duration-300 ${isSidebarOpen ? 'w-[280px]' : 'hidden'
+          className={`fixed inset-y-0 left-0 z-50 flex h-full w-[280px] shrink-0 flex-col bg-[#08090C] border-r border-white/[0.08] p-4 transition-transform duration-300 ease-in-out md:relative md:z-auto md:transition-[width] md:duration-300 md:translate-x-0 ${isSidebarOpen
+              ? 'translate-x-0 md:w-[280px]'
+              : '-translate-x-full md:w-0 md:p-0 md:border-0 md:overflow-hidden'
             }`}
         >
           {/* Header */}
@@ -303,8 +321,8 @@ const Dashboard = () => {
                   role="button"
                   tabIndex={0}
                   className={`group relative w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${isEditing ? '' : 'cursor-pointer'} ${isActive
-                      ? 'bg-white/[0.08] text-white font-medium shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]'
+                    ? 'bg-white/[0.08] text-white font-medium shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]'
                     }`}
                 >
                   <svg className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-400'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
