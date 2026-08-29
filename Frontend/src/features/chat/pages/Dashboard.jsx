@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSelector, useDispatch } from 'react-redux'
 import remarkGfm from 'remark-gfm'
-import { FishSymbol, Send, Sparkles, Square } from 'lucide-react'
+import { FishSymbol, Send, Sparkles, Square, ImagePlus, X } from 'lucide-react'
 
 // Hooks & Actions
 import { useChat } from '../hooks/useChat'
@@ -33,6 +33,7 @@ const Dashboard = () => {
   const [chatInput, setChatInput] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [pendingMessage, setPendingMessage] = useState(null)
+  const [pendingImage, setPendingImage] = useState(null)
   const [sendError, setSendError] = useState(null)
 
   // UI Panels & Controls
@@ -47,6 +48,8 @@ const Dashboard = () => {
   const [editTitle, setEditTitle] = useState('')
   const [mode, setMode] = useState('signal')
   const [isModeOpen, setIsModeOpen] = useState(false)
+  const [attachedImage, setAttachedImage] = useState(null)
+  const [imageError, setImageError] = useState(null)
 
   // ==========================================
   // 3. DOM & ENGINE REFS
@@ -55,6 +58,7 @@ const Dashboard = () => {
   const abortControllerRef = useRef(null)
   const sendingRef = useRef(false)
   const inputRef = useRef(null)
+  const fileInputRef = useRef(null)
   const profileRef = useRef(null)
   const modeRef = useRef(null)
 
@@ -168,7 +172,9 @@ const Dashboard = () => {
   const handleSubmitMessage = async (event, customMsg = null) => {
     if (event) event.preventDefault()
     const msgToSend = (customMsg || chatInput).trim()
-    if (!msgToSend || sendingRef.current) return
+    if ((!msgToSend && !attachedImage) || sendingRef.current) return
+
+    const imageToSend = attachedImage
 
     const controller = new AbortController()
     abortControllerRef.current = controller
@@ -176,23 +182,53 @@ const Dashboard = () => {
     sendingRef.current = true
     setSendError(null)
     setPendingMessage(msgToSend)
+    setPendingImage(imageToSend)
     setChatInput('')
+    setAttachedImage(null)
     setIsSending(true)
 
     try {
-      await chat.handleSendMessage({ message: msgToSend, chatId: currentChatId, signal: controller.signal, mode })
+      await chat.handleSendMessage({ message: msgToSend, chatId: currentChatId, signal: controller.signal, mode, image: imageToSend })
     } catch (err) {
-
       if (err.code !== 'ERR_CANCELED') {
         setSendError('Engine connection interrupted. Retry query.')
         setChatInput(msgToSend)
+        setAttachedImage(imageToSend)
       }
     } finally {
       abortControllerRef.current = null
       sendingRef.current = false
       setIsSending(false)
       setPendingMessage(null)
+      setPendingImage(null)
     }
+  }
+
+  const MAX_IMAGE_BYTES = 4 * 1024 * 1024
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setImageError('Only image files are supported.')
+      return
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setImageError('Image is too large (max 4MB).')
+      return
+    }
+
+    setImageError(null)
+    const reader = new FileReader()
+    reader.onload = () => setAttachedImage(reader.result)
+    reader.readAsDataURL(file)
+  }
+
+  const removeAttachedImage = () => {
+    setAttachedImage(null)
+    setImageError(null)
   }
 
   const handleStopGenerating = () => {
@@ -487,7 +523,16 @@ const Dashboard = () => {
                       }`}
                   >
                     {message.role === 'user' ? (
-                      <p>{message.content}</p>
+                      <div className="space-y-2">
+                        {message.image && (
+                          <img
+                            src={message.image}
+                            alt="Attached"
+                            className="max-h-64 w-full rounded-2xl border border-white/10 object-cover"
+                          />
+                        )}
+                        {message.content && <p>{message.content}</p>}
+                      </div>
                     ) : (
                       <div className="space-y-2">
                         <ReactMarkdown
@@ -555,9 +600,16 @@ const Dashboard = () => {
                 </div>
               ))}
 
-              {pendingMessage && (
-                <div className="max-w-[78%] w-fit ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/10 px-6 py-4 text-zinc-100 backdrop-blur-md text-[15px]">
-                  <p>{pendingMessage}</p>
+              {(pendingMessage || pendingImage) && (
+                <div className="max-w-[78%] w-fit ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/10 px-6 py-4 text-zinc-100 backdrop-blur-md text-[15px] space-y-2">
+                  {pendingImage && (
+                    <img
+                      src={pendingImage}
+                      alt="Attached"
+                      className="max-h-64 w-full rounded-2xl border border-white/10 object-cover"
+                    />
+                  )}
+                  {pendingMessage && <p>{pendingMessage}</p>}
                 </div>
               )}
 
@@ -634,6 +686,25 @@ const Dashboard = () => {
                 onSubmit={handleSubmitMessage}
                 className="relative flex flex-col w-full rounded-[25px] bg-[#090a0f]/90 backdrop-blur-2xl p-3.5 shadow-[0_20px_60px_rgba(0,0,0,0.95)]"
               >
+                {attachedImage && (
+                  <div className="mb-2 px-1">
+                    <div className="relative inline-block">
+                      <img
+                        src={attachedImage}
+                        alt="Selected"
+                        className="h-16 w-16 rounded-xl border border-white/10 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeAttachedImage}
+                        className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 border border-white/20 text-zinc-300 hover:text-white transition cursor-pointer"
+                        title="Remove image"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {/* Input Textarea */}
                 <textarea
                   ref={inputRef}
@@ -653,7 +724,26 @@ const Dashboard = () => {
 
                 {/* Bottom Bar: Mode Tag & Action Button */}
                 <div className="flex items-center justify-between pt-2.5 px-1 border-t border-white/[0.05] mt-1">
-                  <div ref={modeRef} className="relative flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isSending}
+                      className="flex items-center justify-center h-7 w-7 rounded-lg text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                      title="Attach image"
+                    >
+                      <ImagePlus className="w-4 h-4" />
+                    </button>
+                    <div ref={modeRef} className="relative flex items-center gap-2">
+
+                    </div>
                     <button
                       type="button"
                       onClick={() => setIsModeOpen((open) => !open)}
@@ -688,6 +778,7 @@ const Dashboard = () => {
                         ))}
                       </div>
                     )}
+
                   </div>
 
                   {/* Circular Glow Send Trigger */}
@@ -703,7 +794,7 @@ const Dashboard = () => {
                   ) : (
                     <button
                       type="submit"
-                      disabled={!chatInput.trim()}
+                      disabled={!chatInput.trim() && !attachedImage}
                       className="flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 text-white disabled:opacity-20 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.5)] border border-white/20"
                       title="Send message"
                     >
@@ -718,6 +809,9 @@ const Dashboard = () => {
             {/* Error Telemetry */}
             {sendError && (
               <p className="mt-2 text-center text-xs text-red-400">{sendError}</p>
+            )}
+            {imageError && (
+              <p className="mt-2 text-center text-xs text-red-400">{imageError}</p>
             )}
           </div>
 
