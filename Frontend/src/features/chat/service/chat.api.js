@@ -26,3 +26,7 @@ export const deleteChat = async (chatId) => {
     return response.data
 }
 
+export const renameChat = async (chatId, title) => {
+    const response = await api.patch(`/api/chats/rename/${chatId}`, { title })
+    return response.data
+}
