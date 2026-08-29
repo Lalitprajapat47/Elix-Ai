@@ -37,13 +37,13 @@ export function useAuth() {
             const data = await getMe()
             dispatch(setUser(data.user))
         } catch (err) {
-            dispatch(setError(err.response?.data?.message || "Failed to fetch user data"))
+            dispatch(setUser(null))
         } finally {
             dispatch(setLoading(false))
         }
     }
 
-        async function handleLogout() {
+    async function handleLogout() {
         try {
             await logout()
         } catch (err) {
