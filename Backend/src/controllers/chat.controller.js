@@ -4,13 +4,13 @@ import messageModel from "../models/message.model.js";
 
 export async function sendMessage(req, res) {
 
-    const { message, chat: chatId, mode } = req.body;
+    const { message, chat: chatId, mode, image } = req.body;
 
 
     let title = null, chat = null;
 
     if (!chatId) {
-        title = await generateChatTitle(message);
+        title = await generateChatTitle(message?.trim() ? message : "Shared an image");
         chat = await chatModel.create({
             user: req.user.id,
             title
@@ -20,6 +20,7 @@ export async function sendMessage(req, res) {
     const userMessage = await messageModel.create({
         chat: chatId || chat._id,
         content: message,
+        image,
         role: "user"
     })
 
