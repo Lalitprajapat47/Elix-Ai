@@ -100,3 +100,38 @@ export async function deleteChat(req, res) {
         message: "Chat deleted successfully"
     })
 }
+
+
+/**
+ * @desc Rename a chat's title
+ * @route PATCH /api/chats/rename/:chatId
+ * @access Private
+ */
+export async function renameChat(req, res) {
+
+    const { chatId } = req.params;
+    const { title } = req.body;
+
+    if (!title || !title.trim()) {
+        return res.status(400).json({
+            message: "Title is required"
+        })
+    }
+
+    const chat = await chatModel.findOneAndUpdate(
+        { _id: chatId, user: req.user.id },
+        { title: title.trim() },
+        { new: true }
+    )
+
+    if (!chat) {
+        return res.status(404).json({
+            message: "Chat not found"
+        })
+    }
+
+    res.status(200).json({
+        message: "Chat renamed successfully",
+        chat
+    })
+}
