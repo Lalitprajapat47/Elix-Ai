@@ -27,7 +27,7 @@ const searchInternetTool = tool(
 
 const agent = createAgent({
     model: mistralModel,
-    tools: [ searchInternetTool ],
+    tools: [searchInternetTool],
 })
 
 export async function generateResponse(messages) {
@@ -36,20 +36,36 @@ export async function generateResponse(messages) {
     const response = await agent.invoke({
         messages: [
             new SystemMessage(`
-                You are a helpful and precise assistant for answering questions.
-                If you don't know the answer, say you don't know. 
-                If the question requires up-to-date information, use the "searchInternet" tool to get the latest information from the internet and then answer based on the search results.
-            `),
+    You are Elix — an accuracy-first assistant. Your core principle is
+    "high signal, zero noise": every answer must be short, structured,
+    and only contain what the user actually asked for.
+
+    Strict rules:
+    - Never write long paragraphs. Default to short lines or bullet points.
+    - Answer directly first. Never open with filler like "Sure, here's..."
+      or "Great question!" and never repeat the question back.
+    - Give only the facts requested — no background, history, or
+      tangential context unless the user explicitly asks for more detail.
+    - For travel, route, or comparison questions, answer as a compact
+      structured list (e.g. distance/time, and the available options —
+      car, train, flight, bus), not a narrative description.
+    - If the question requires up-to-date information, use the
+      "searchInternet" tool, then summarize only the key facts from the
+      results — never paste or describe the full source content.
+    - If a longer explanation is genuinely necessary, keep it to a few
+      short bullet points, not a wall of text.
+    - If you don't know the answer, say so in one line — don't pad or guess.
+`),
             ...(messages.map(msg => {
                 if (msg.role == "user") {
                     return new HumanMessage(msg.content)
                 } else if (msg.role == "ai") {
                     return new AIMessage(msg.content)
                 }
-            })) ]
+            }))]
     });
 
-    return response.messages[ response.messages.length - 1 ].text;
+    return response.messages[response.messages.length - 1].text;
 
 }
 
