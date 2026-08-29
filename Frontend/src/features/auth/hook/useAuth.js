@@ -37,6 +37,9 @@ export function useAuth() {
             const data = await getMe()
             dispatch(setUser(data.user))
         } catch (err) {
+            // silent background check on app load — not a user-initiated
+            // action, so it should never populate the login/register
+            // error banner. Not being logged in yet is expected here.
             dispatch(setUser(null))
         } finally {
             dispatch(setLoading(false))
