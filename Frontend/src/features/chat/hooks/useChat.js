@@ -1,6 +1,6 @@
 import { initializeSocketConnection } from "../service/chat.socket";
-import { sendMessage, getChats, getMessages, deleteChat } from "../service/chat.api";
-import { setChats, removeChat, setCurrentChatId, setError, setLoading, createNewChat, addNewMessage, addMessages } from "../chat.slice";
+import { sendMessage, getChats, getMessages, deleteChat, renameChat } from "../service/chat.api";
+import { setChats, removeChat, renameChatTitle, setCurrentChatId, setError, setLoading, createNewChat, addNewMessage, addMessages } from "../chat.slice";
 import { useDispatch } from "react-redux";
 
 
@@ -84,12 +84,23 @@ export const useChat = () => {
         }
     }
 
+    async function handleRenameChat(chatId, title) {
+        try {
+            await renameChat(chatId, title)
+            dispatch(renameChatTitle({ chatId, title }))
+        } catch (error) {
+            dispatch(setError(error.response?.data?.message || "Failed to rename chat"))
+            throw error
+        }
+    }
+
     return {
-    initializeSocketConnection,
-    handleSendMessage,
-    handleGetChats,
-    handleOpenChat,
-    handleDeleteChat
-}
+        initializeSocketConnection,
+        handleSendMessage,
+        handleGetChats,
+        handleOpenChat,
+        handleDeleteChat,
+        handleRenameChat,
+    }
 
 }
