@@ -9,11 +9,11 @@ export const useChat = () => {
     const dispatch = useDispatch()
 
 
-    async function handleSendMessage({ message, chatId }) {
+    async function handleSendMessage({ message, chatId, signal }) {
         dispatch(setLoading(true))
         dispatch(setError(null))
         try {
-            const data = await sendMessage({ message, chatId })
+            const data = await sendMessage({ message, chatId, signal })
             const { chat, aiMessage } = data
             if (!chatId)
                 dispatch(createNewChat({
@@ -32,7 +32,9 @@ export const useChat = () => {
             }))
             dispatch(setCurrentChatId(chatId || chat._id))
         } catch (error) {
-            dispatch(setError(error.response?.data?.message || "Failed to send message"))
+            if (error.code !== "ERR_CANCELED") {
+                dispatch(setError(error.response?.data?.message || "Failed to send message"))
+            }
             throw error
         } finally {
             dispatch(setLoading(false))
