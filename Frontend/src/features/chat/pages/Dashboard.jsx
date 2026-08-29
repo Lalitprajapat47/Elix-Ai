@@ -197,46 +197,69 @@ const Dashboard = () => {
           }
         }
         .animate-beam-spin {
-          animation: rotateBeam 6s linear infinite;
+        animation: rotateBeam 6s linear infinite;
+        }
+
+      @keyframes loadingBounce {
+        0 %, 60 %, 100 % { transform: translateY(0); opacity: 0.45; }
+          30% {transform: translateY(-5px); opacity: 1; }
+        }
+      .loading-bounce {
+        animation: loadingBounce 1.1s ease-in-out infinite;
+        }
+
+      @keyframes sparkleSpin {
+        0 % { transform: rotate(0deg) scale(1); }
+          50% {transform: rotate(180deg) scale(1.15); }
+      100% {transform: rotate(360deg) scale(1); }
+        }
+      .sparkle-spin {
+        animation: sparkleSpin 2.2s ease-in-out infinite;
         }
       `}</style>
 
       {/* Core Silver Fog Backdrop */}
-      {!hasMessages && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-          <div className="animate-silver-ambient absolute h-[580px] w-[900px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.18)_0%,rgba(160,165,180,0.06)_45%,transparent_75%)]" />
-          <div className="animate-silver-ambient absolute h-[280px] w-[450px] rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.35)_0%,rgba(200,205,220,0.06)_50%,transparent_70%)]" style={{ animationDelay: '-3s' }} />
-        </div>
-      )}
+      {
+        !hasMessages && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+            <div className="animate-silver-ambient absolute h-[580px] w-[900px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.18)_0%,rgba(160,165,180,0.06)_45%,transparent_75%)]" />
+            <div className="animate-silver-ambient absolute h-[280px] w-[450px] rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.35)_0%,rgba(200,205,220,0.06)_50%,transparent_70%)]" style={{ animationDelay: '-3s' }} />
+          </div>
+        )
+      }
 
       {/* Reopen Sidebar Floating Trigger */}
-      {!isSidebarOpen && (
-        <button
-          type="button"
-          onClick={() => setIsSidebarOpen(true)}
-          className="absolute left-5 top-5 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-zinc-950/80 text-zinc-400 backdrop-blur-xl transition hover:border-white/20 hover:text-white cursor-pointer shadow-xl"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="3" width="18" height="18" rx="4" />
-            <path d="M9 3v18" />
-          </svg>
-        </button>
-      )}
+      {
+        !isSidebarOpen && (
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(true)}
+            className="absolute left-5 top-5 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-zinc-950/80 text-zinc-400 backdrop-blur-xl transition hover:border-white/20 hover:text-white cursor-pointer shadow-xl"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="4" />
+              <path d="M9 3v18" />
+            </svg>
+          </button>
+        )
+      }
 
       {/* Main Workspace Layout */}
-      {isSidebarOpen && (
-        <div
-          onClick={() => setIsSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
-        />
-      )}
+      {
+        isSidebarOpen && (
+          <div
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          />
+        )
+      }
 
       <div className="relative z-10 flex h-full w-full">
 
         <aside
           className={`fixed inset-y-0 left-0 z-50 flex h-full w-[280px] shrink-0 flex-col bg-[#08090C] border-r border-white/[0.08] p-4 transition-transform duration-300 ease-in-out md:relative md:z-auto md:transition-[width] md:duration-300 md:translate-x-0 ${isSidebarOpen
-              ? 'translate-x-0 md:w-[280px]'
-              : '-translate-x-full md:w-0 md:p-0 md:border-0 md:overflow-hidden'
+            ? 'translate-x-0 md:w-[280px]'
+            : '-translate-x-full md:w-0 md:p-0 md:border-0 md:overflow-hidden'
             }`}
         >
           {/* Header */}
@@ -488,10 +511,16 @@ const Dashboard = () => {
               )}
 
               {isSending && (
-                <div className="mr-auto flex items-center gap-1.5 px-3 py-4">
-                  <span className="h-2 w-2 rounded-full bg-zinc-400 animate-pulse" />
-                  <span className="h-2 w-2 rounded-full bg-zinc-500 animate-pulse" style={{ animationDelay: '0.2s' }} />
-                  <span className="h-2 w-2 rounded-full bg-zinc-600 animate-pulse" style={{ animationDelay: '0.4s' }} />
+                <div className="mr-auto flex items-center gap-2.5 px-2 py-3">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.06] border border-white/10">
+                    <Sparkles className="sparkle-spin h-3.5 w-3.5 text-amber-400" />
+                  </div>
+                  <span className="text-sm font-medium text-zinc-400">Elix is thinking</span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-400 loading-bounce" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-400 loading-bounce" style={{ animationDelay: '0.15s' }} />
+                    <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-400 loading-bounce" style={{ animationDelay: '0.3s' }} />
+                  </span>
                 </div>
               )}
 
@@ -602,7 +631,7 @@ const Dashboard = () => {
 
         </section>
       </div>
-    </main>
+    </main >
   )
 }
 
