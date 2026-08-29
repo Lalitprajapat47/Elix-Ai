@@ -9,11 +9,11 @@ export const useChat = () => {
     const dispatch = useDispatch()
 
 
-    async function handleSendMessage({ message, chatId, signal }) {
+    async function handleSendMessage({ message, chatId, signal, mode }) {
         dispatch(setLoading(true))
         dispatch(setError(null))
         try {
-            const data = await sendMessage({ message, chatId, signal })
+            const data = await sendMessage({ message, chatId, signal, mode })
             const { chat, aiMessage } = data
             if (!chatId)
                 dispatch(createNewChat({

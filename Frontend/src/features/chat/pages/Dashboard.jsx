@@ -9,6 +9,12 @@ import { useChat } from '../hooks/useChat'
 import { useAuth } from '../../auth/hook/useAuth'
 import { setCurrentChatId } from '../chat.slice'
 
+const MODES = [
+  { id: 'signal', label: 'Signal', description: 'Short, precise, only the facts' },
+  { id: 'context', label: 'Context', description: 'Direct answer with useful context' },
+  { id: 'deep', label: 'Deep Dive', description: 'Thorough, in-depth explanation' },
+]
+
 const Dashboard = () => {
   // ==========================================
   // 1. HOOKS & GLOBAL STATE
@@ -39,6 +45,8 @@ const Dashboard = () => {
   const [copiedIndex, setCopiedIndex] = useState(null)
   const [editingChatId, setEditingChatId] = useState(null)
   const [editTitle, setEditTitle] = useState('')
+  const [mode, setMode] = useState('signal')
+  const [isModeOpen, setIsModeOpen] = useState(false)
 
   // ==========================================
   // 3. DOM & ENGINE REFS
@@ -48,6 +56,7 @@ const Dashboard = () => {
   const sendingRef = useRef(false)
   const inputRef = useRef(null)
   const profileRef = useRef(null)
+  const modeRef = useRef(null)
 
   const activeMessages = (currentChatId && chats[currentChatId]?.messages) || []
   const hasMessages = activeMessages.length > 0 || isSending
@@ -82,6 +91,17 @@ const Dashboard = () => {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isProfileOpen])
+
+  useEffect(() => {
+    if (!isModeOpen) return
+    const handleClickOutside = (event) => {
+      if (modeRef.current && !modeRef.current.contains(event.target)) {
+        setIsModeOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isModeOpen])
 
   // ==========================================
   // 5. EVENT HANDLERS
@@ -160,8 +180,9 @@ const Dashboard = () => {
     setIsSending(true)
 
     try {
-      await chat.handleSendMessage({ message: msgToSend, chatId: currentChatId, signal: controller.signal })
+      await chat.handleSendMessage({ message: msgToSend, chatId: currentChatId, signal: controller.signal, mode })
     } catch (err) {
+
       if (err.code !== 'ERR_CANCELED') {
         setSendError('Engine connection interrupted. Retry query.')
         setChatInput(msgToSend)
@@ -613,11 +634,41 @@ const Dashboard = () => {
 
                 {/* Bottom Bar: Mode Tag & Action Button */}
                 <div className="flex items-center justify-between pt-2.5 px-1 border-t border-white/[0.05] mt-1">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 bg-white/[0.04] px-2.5 py-1 rounded-xl border border-white/[0.08] backdrop-blur-md">
+                  <div ref={modeRef} className="relative flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsModeOpen((open) => !open)}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 bg-white/[0.04] px-2.5 py-1 rounded-xl border border-white/[0.08] backdrop-blur-md hover:bg-white/[0.07] hover:text-zinc-200 transition cursor-pointer"
+                    >
                       <Sparkles className="w-3 h-3 text-amber-400" />
-                      <span>Deep Reasoning</span>
-                    </span>
+                      <span>{MODES.find((m) => m.id === mode)?.label}</span>
+                      <svg className="w-3 h-3 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+
+                    {isModeOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 w-60 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl">
+                        {MODES.map((m) => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => { setMode(m.id); setIsModeOpen(false) }}
+                            className="flex w-full items-start justify-between gap-2 px-4 py-3 text-left transition hover:bg-white/[0.06] cursor-pointer"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-zinc-100">{m.label}</p>
+                              <p className="mt-0.5 text-[11px] text-zinc-500">{m.description}</p>
+                            </div>
+                            {mode === m.id && (
+                              <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Circular Glow Send Trigger */}
