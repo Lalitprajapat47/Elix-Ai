@@ -11,9 +11,15 @@ const messageSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+
+        image: {
+            type: String,
+            required: false,
+        },
+
         role: {
             type: String,
-            enum: [ 'user', 'ai' ],
+            enum: ['user', 'ai'],
             required: true,
         },
     },
