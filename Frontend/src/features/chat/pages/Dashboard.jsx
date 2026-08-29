@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSelector, useDispatch } from 'react-redux'
 import remarkGfm from 'remark-gfm'
-import { FishSymbol, Send, Sparkles } from 'lucide-react'
+import { FishSymbol, Send, Sparkles, Square } from 'lucide-react'
 
 // Hooks & Actions
 import { useChat } from '../hooks/useChat'
@@ -44,6 +44,7 @@ const Dashboard = () => {
   // 3. DOM & ENGINE REFS
   // ==========================================
   const messagesEndRef = useRef(null)
+  const abortControllerRef = useRef(null)
   const sendingRef = useRef(false)
   const inputRef = useRef(null)
   const profileRef = useRef(null)
@@ -149,6 +150,9 @@ const Dashboard = () => {
     const msgToSend = (customMsg || chatInput).trim()
     if (!msgToSend || sendingRef.current) return
 
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     sendingRef.current = true
     setSendError(null)
     setPendingMessage(msgToSend)
@@ -156,15 +160,22 @@ const Dashboard = () => {
     setIsSending(true)
 
     try {
-      await chat.handleSendMessage({ message: msgToSend, chatId: currentChatId })
+      await chat.handleSendMessage({ message: msgToSend, chatId: currentChatId, signal: controller.signal })
     } catch (err) {
-      setSendError('Engine connection interrupted. Retry query.')
-      setChatInput(msgToSend)
+      if (err.code !== 'ERR_CANCELED') {
+        setSendError('Engine connection interrupted. Retry query.')
+        setChatInput(msgToSend)
+      }
     } finally {
+      abortControllerRef.current = null
       sendingRef.current = false
       setIsSending(false)
       setPendingMessage(null)
     }
+  }
+
+  const handleStopGenerating = () => {
+    abortControllerRef.current?.abort()
   }
 
   const filteredChats = Object.values(chats).filter((chatObj) =>
@@ -610,14 +621,25 @@ const Dashboard = () => {
                   </div>
 
                   {/* Circular Glow Send Trigger */}
-                  <button
-                    type="submit"
-                    disabled={!chatInput.trim() || isSending}
-                    className="flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 text-white disabled:opacity-20 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.5)] border border-white/20"
-                    title="Send message"
-                  >
-                    <Send className="w-3.5 h-3.5 ml-0.5" />
-                  </button>
+                  {isSending ? (
+                    <button
+                      type="button"
+                      onClick={handleStopGenerating}
+                      className="flex items-center justify-center h-8 w-8 rounded-full bg-white text-black hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/20"
+                      title="Stop generating"
+                    >
+                      <Square className="w-3 h-3 fill-current" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={!chatInput.trim()}
+                      className="flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 text-white disabled:opacity-20 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.5)] border border-white/20"
+                      title="Send message"
+                    >
+                      <Send className="w-3.5 h-3.5 ml-0.5" />
+                    </button>
+                  )}
                 </div>
               </form>
 
