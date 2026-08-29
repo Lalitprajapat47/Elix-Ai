@@ -9,11 +9,11 @@ export const useChat = () => {
     const dispatch = useDispatch()
 
 
-    async function handleSendMessage({ message, chatId, signal, mode }) {
+    async function handleSendMessage({ message, chatId, signal, mode, image }) {
         dispatch(setLoading(true))
         dispatch(setError(null))
         try {
-            const data = await sendMessage({ message, chatId, signal, mode })
+            const data = await sendMessage({ message, chatId, signal, mode, image })
             const { chat, aiMessage } = data
             if (!chatId)
                 dispatch(createNewChat({
@@ -24,6 +24,7 @@ export const useChat = () => {
                 chatId: chatId || chat._id,
                 content: message,
                 role: "user",
+                image,
             }))
             dispatch(addNewMessage({
                 chatId: chatId || chat._id,
@@ -66,6 +67,7 @@ export const useChat = () => {
             const formattedMessages = messages.map(msg => ({
                 content: msg.content,
                 role: msg.role,
+                image: msg.image,
             }))
 
             dispatch(addMessages({
