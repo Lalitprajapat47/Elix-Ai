@@ -1,6 +1,6 @@
 import { initializeSocketConnection } from "../service/chat.socket";
-import { sendMessage, getChats, getMessages, deleteChat, renameChat } from "../service/chat.api";
-import { setChats, removeChat, renameChatTitle, setCurrentChatId, setError, setLoading, createNewChat, addNewMessage, addMessages } from "../chat.slice";
+import { sendMessage, getChats, getMessages, deleteChat, renameChat, regenerateMessage } from "../service/chat.api";
+import { setChats, removeChat, renameChatTitle, replaceLastMessage, setCurrentChatId, setError, setLoading, createNewChat, addNewMessage, addMessages } from "../chat.slice";
 import { useDispatch } from "react-redux";
 
 
@@ -100,6 +100,26 @@ export const useChat = () => {
         }
     }
 
+    async function handleRegenerateMessage({ chatId, mode, signal }) {
+        dispatch(setLoading(true))
+        dispatch(setError(null))
+        try {
+            const data = await regenerateMessage({ chatId, mode, signal })
+            dispatch(replaceLastMessage({
+                chatId,
+                content: data.aiMessage.content,
+                role: data.aiMessage.role,
+            }))
+        } catch (error) {
+            if (error.code !== "ERR_CANCELED") {
+                dispatch(setError(error.response?.data?.message || "Failed to regenerate response"))
+            }
+            throw error
+        } finally {
+            dispatch(setLoading(false))
+        }
+    }
+
     return {
         initializeSocketConnection,
         handleSendMessage,
@@ -107,6 +127,7 @@ export const useChat = () => {
         handleOpenChat,
         handleDeleteChat,
         handleRenameChat,
+        handleRegenerateMessage
     }
 
 }

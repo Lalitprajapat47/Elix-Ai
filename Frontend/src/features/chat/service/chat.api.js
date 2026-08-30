@@ -30,3 +30,8 @@ export const renameChat = async (chatId, title) => {
     const response = await api.patch(`/api/chats/rename/${chatId}`, { title })
     return response.data
 }
+
+export const regenerateMessage = async ({ chatId, mode, signal }) => {
+    const response = await api.post(`/api/chats/regenerate/${chatId}`, { mode }, { signal })
+    return response.data
+}

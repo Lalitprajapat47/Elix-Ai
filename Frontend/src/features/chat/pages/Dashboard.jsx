@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSelector, useDispatch } from 'react-redux'
 import remarkGfm from 'remark-gfm'
-import { FishSymbol, Send, Sparkles, Square, ImagePlus, X, Plus, FileText, ImageIcon, Paperclip } from 'lucide-react'
+import { FishSymbol, Send, Sparkles, Square, ImagePlus, X, Plus, FileText, ImageIcon, Paperclip, RotateCcw } from 'lucide-react'
 
 
 // Hooks & Actions
@@ -327,6 +327,29 @@ const Dashboard = () => {
 
   const handleStopGenerating = () => {
     abortControllerRef.current?.abort()
+  }
+
+  const handleRegenerateMessage = async () => {
+    if (!currentChatId || sendingRef.current) return
+
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
+    sendingRef.current = true
+    setSendError(null)
+    setIsSending(true)
+
+    try {
+      await chat.handleRegenerateMessage({ chatId: currentChatId, mode, signal: controller.signal })
+    } catch (err) {
+      if (err.code !== 'ERR_CANCELED') {
+        setSendError('Could not regenerate response. Please try again.')
+      }
+    } finally {
+      abortControllerRef.current = null
+      sendingRef.current = false
+      setIsSending(false)
+    }
   }
 
   const filteredChats = Object.values(chats).filter((chatObj) =>
@@ -674,6 +697,17 @@ const Dashboard = () => {
                               </svg>
                             )}
                           </button>
+                          {index === activeMessages.length - 1 && (
+                            <button
+                              type="button"
+                              onClick={handleRegenerateMessage}
+                              disabled={isSending}
+                              className="flex items-center gap-1.5 p-1.5 rounded-lg hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                              title="Regenerate response"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
