@@ -9,11 +9,11 @@ export const useChat = () => {
     const dispatch = useDispatch()
 
 
-    async function handleSendMessage({ message, chatId, signal, mode, image }) {
+    async function handleSendMessage({ message, chatId, signal, mode, image, file }) {
         dispatch(setLoading(true))
         dispatch(setError(null))
         try {
-            const data = await sendMessage({ message, chatId, signal, mode, image })
+            const data = await sendMessage({ message, chatId, signal, mode, image, file })
             const { chat, aiMessage } = data
             if (!chatId)
                 dispatch(createNewChat({
@@ -25,6 +25,7 @@ export const useChat = () => {
                 content: message,
                 role: "user",
                 image,
+                fileName: file?.name,
             }))
             dispatch(addNewMessage({
                 chatId: chatId || chat._id,
@@ -68,6 +69,7 @@ export const useChat = () => {
                 content: msg.content,
                 role: msg.role,
                 image: msg.image,
+                fileName: msg.fileName,
             }))
 
             dispatch(addMessages({
