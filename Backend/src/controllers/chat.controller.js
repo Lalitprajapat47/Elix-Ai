@@ -44,10 +44,10 @@ export async function sendMessage(req, res) {
 
     const aiMessage = await messageModel.create({
         chat: chatId || chat._id,
-        content: result,
+        content: result.text,
+        sources: result.sources,
         role: "ai"
     })
-
 
     res.status(201).json({
         title,
@@ -92,7 +92,8 @@ export async function regenerateResponse(req, res) {
 
     const aiMessage = await messageModel.create({
         chat: chatId,
-        content: result,
+        content: result.text,
+        sources: result.sources,
         role: "ai"
     })
 

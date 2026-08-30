@@ -26,6 +26,14 @@ const messageSchema = new mongoose.Schema(
             required: false,
         },
 
+        sources: [
+            {
+                title: { type: String },
+                url: { type: String },
+                _id: false,
+            }
+        ],
+
         role: {
             type: String,
             enum: ['user', 'ai'],

@@ -20,8 +20,8 @@ const chatSlice = createSlice({
             }
         },
         addNewMessage: (state, action) => {
-            const { chatId, content, role, image, fileName } = action.payload
-            state.chats[chatId].messages.push({ content, role, image, fileName })
+            const { chatId, content, role, image, fileName, sources } = action.payload
+            state.chats[chatId].messages.push({ content, role, image, fileName, sources })
         },
         addMessages: (state, action) => {
             const { chatId, messages } = action.payload
@@ -47,10 +47,10 @@ const chatSlice = createSlice({
         },
 
         replaceLastMessage: (state, action) => {
-            const { chatId, content, role } = action.payload
+            const { chatId, content, role, sources } = action.payload
             const messages = state.chats[chatId]?.messages
             if (messages && messages.length > 0) {
-                messages[messages.length - 1] = { content, role }
+                messages[messages.length - 1] = { content, role, sources }
             }
         },
 

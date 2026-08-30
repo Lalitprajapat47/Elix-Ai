@@ -99,6 +99,32 @@ const SYSTEM_PROMPTS = {
     `,
 }
 
+function extractSources(agentMessages) {
+  const sources = []
+  const seenUrls = new Set()
+
+  for (const msg of agentMessages) {
+    if (msg?.name !== "searchInternet") continue
+    try {
+      const parsed = JSON.parse(msg.content)
+      const results = parsed?.results || []
+      for (const result of results) {
+        if (result?.url && !seenUrls.has(result.url)) {
+          seenUrls.add(result.url)
+          sources.push({
+            title: result.title || result.url,
+            url: result.url,
+          })
+        }
+      }
+    } catch (err) {
+      // malformed tool output — skip it, nothing to cite from this call
+    }
+  }
+
+  return sources
+}
+
 export async function generateResponse(messages, mode = "signal") {
   console.log(messages)
 
@@ -128,9 +154,13 @@ export async function generateResponse(messages, mode = "signal") {
       }))]
   });
 
-  return response.messages[response.messages.length - 1].text;
+      const text = response.messages[ response.messages.length - 1 ].text;
+    const sources = extractSources(response.messages);
+
+    return { text, sources };
 
 }
+
 
 export async function generateChatTitle(message) {
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSelector, useDispatch } from 'react-redux'
 import remarkGfm from 'remark-gfm'
-import { FishSymbol, Send, Sparkles, Square, ImagePlus, X, Plus, FileText, ImageIcon, Paperclip, RotateCcw } from 'lucide-react'
+import { FishSymbol, Send, Sparkles, Square, ImagePlus, X, Plus, FileText, ImageIcon, Paperclip, RotateCcw, Globe } from 'lucide-react'
 
 
 // Hooks & Actions
@@ -237,6 +237,14 @@ const Dashboard = () => {
     navigator.clipboard.writeText(content)
     setCopiedIndex(index)
     setTimeout(() => setCopiedIndex(null), 2000)
+  }
+
+  const getHostname = (url) => {
+    try {
+      return new URL(url).hostname.replace('www.', '')
+    } catch {
+      return url
+    }
   }
 
   const handleSubmitMessage = async (event, customMsg = null) => {
@@ -760,8 +768,31 @@ const Dashboard = () => {
                           {message.content}
                         </ReactMarkdown>
 
+
+                        
+
                         {/* Copy Action */}
+                        
+                        {message.sources && message.sources.length > 0 && (
+  <div className="mb-2 flex flex-wrap gap-2">
+    {message.sources.map((source, sourceIndex) => (
+      
+        key={sourceIndex}
+        href={source.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={source.title}
+        className="flex max-w-[220px] items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-zinc-400 transition hover:bg-white/[0.08] hover:text-zinc-200"
+      >
+        <Globe className="h-3 w-3 shrink-0" />
+        <span className="truncate">{getHostname(source.url)}</span>
+      </a>
+    ))}
+  </div>
+)}
+
                         <div className="flex items-center pt-1 text-zinc-500">
+                          
                           <button
                             type="button"
                             onClick={() => handleCopyMessage(message.content, index)}

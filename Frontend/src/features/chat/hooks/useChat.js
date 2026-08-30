@@ -31,6 +31,7 @@ export const useChat = () => {
                 chatId: chatId || chat._id,
                 content: aiMessage.content,
                 role: aiMessage.role,
+                sources: aiMessage.sources,
             }))
             dispatch(setCurrentChatId(chatId || chat._id))
         } catch (error) {
@@ -70,6 +71,7 @@ export const useChat = () => {
                 role: msg.role,
                 image: msg.image,
                 fileName: msg.fileName,
+                sources: msg.sources,
             }))
 
             dispatch(addMessages({
@@ -109,6 +111,7 @@ export const useChat = () => {
                 chatId,
                 content: data.aiMessage.content,
                 role: data.aiMessage.role,
+                sources: data.aiMessage.sources,
             }))
         } catch (error) {
             if (error.code !== "ERR_CANCELED") {
