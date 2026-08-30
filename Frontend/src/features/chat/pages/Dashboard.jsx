@@ -2,7 +2,8 @@ import React, { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSelector, useDispatch } from 'react-redux'
 import remarkGfm from 'remark-gfm'
-import { FishSymbol, Send, Sparkles, Square, ImagePlus, X } from 'lucide-react'
+import { FishSymbol, Send, Sparkles, Square, ImagePlus, X, Plus, FileText, ImageIcon, Paperclip } from 'lucide-react'
+
 
 // Hooks & Actions
 import { useChat } from '../hooks/useChat'
@@ -34,6 +35,7 @@ const Dashboard = () => {
   const [isSending, setIsSending] = useState(false)
   const [pendingMessage, setPendingMessage] = useState(null)
   const [pendingImage, setPendingImage] = useState(null)
+  const [pendingFile, setPendingFile] = useState(null)
   const [sendError, setSendError] = useState(null)
 
   // UI Panels & Controls
@@ -49,7 +51,9 @@ const Dashboard = () => {
   const [mode, setMode] = useState('signal')
   const [isModeOpen, setIsModeOpen] = useState(false)
   const [attachedImage, setAttachedImage] = useState(null)
+  const [attachedFile, setAttachedFile] = useState(null)
   const [imageError, setImageError] = useState(null)
+  const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false)
 
   // ==========================================
   // 3. DOM & ENGINE REFS
@@ -59,6 +63,8 @@ const Dashboard = () => {
   const sendingRef = useRef(false)
   const inputRef = useRef(null)
   const fileInputRef = useRef(null)
+  const docInputRef = useRef(null)
+  const attachMenuRef = useRef(null)
   const profileRef = useRef(null)
   const modeRef = useRef(null)
 
@@ -106,6 +112,17 @@ const Dashboard = () => {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isModeOpen])
+
+  useEffect(() => {
+    if (!isAttachMenuOpen) return
+    const handleClickOutside = (event) => {
+      if (attachMenuRef.current && !attachMenuRef.current.contains(event.target)) {
+        setIsAttachMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isAttachMenuOpen])
 
   // ==========================================
   // 5. EVENT HANDLERS
@@ -172,9 +189,10 @@ const Dashboard = () => {
   const handleSubmitMessage = async (event, customMsg = null) => {
     if (event) event.preventDefault()
     const msgToSend = (customMsg || chatInput).trim()
-    if ((!msgToSend && !attachedImage) || sendingRef.current) return
+    if ((!msgToSend && !attachedImage && !attachedFile) || sendingRef.current) return
 
     const imageToSend = attachedImage
+    const fileToSend = attachedFile
 
     const controller = new AbortController()
     abortControllerRef.current = controller
@@ -183,17 +201,20 @@ const Dashboard = () => {
     setSendError(null)
     setPendingMessage(msgToSend)
     setPendingImage(imageToSend)
+    setPendingFile(fileToSend)
     setChatInput('')
     setAttachedImage(null)
+    setAttachedFile(null)
     setIsSending(true)
 
     try {
-      await chat.handleSendMessage({ message: msgToSend, chatId: currentChatId, signal: controller.signal, mode, image: imageToSend })
+      await chat.handleSendMessage({ message: msgToSend, chatId: currentChatId, signal: controller.signal, mode, image: imageToSend, file: fileToSend })
     } catch (err) {
       if (err.code !== 'ERR_CANCELED') {
         setSendError('Engine connection interrupted. Retry query.')
         setChatInput(msgToSend)
         setAttachedImage(imageToSend)
+        setAttachedFile(fileToSend)
       }
     } finally {
       abortControllerRef.current = null
@@ -201,14 +222,13 @@ const Dashboard = () => {
       setIsSending(false)
       setPendingMessage(null)
       setPendingImage(null)
+      setPendingFile(null)
     }
   }
 
   const MAX_IMAGE_BYTES = 4 * 1024 * 1024
 
-  const handleFileSelect = (event) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
+  const processImageFile = (file) => {
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
@@ -226,8 +246,65 @@ const Dashboard = () => {
     reader.readAsDataURL(file)
   }
 
+  const handleFileSelect = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    processImageFile(file)
+  }
+
+  const handlePaste = (event) => {
+    const items = event.clipboardData?.items
+    if (!items) return
+
+    for (const item of items) {
+      if (item.type && item.type.startsWith('image/')) {
+        const file = item.getAsFile()
+        if (file) {
+          event.preventDefault()
+          processImageFile(file)
+        }
+        break
+      }
+    }
+  }
+
+
   const removeAttachedImage = () => {
     setAttachedImage(null)
+    setImageError(null)
+  }
+
+  const MAX_DOC_BYTES = 6 * 1024 * 1024
+  const ALLOWED_DOC_TYPES = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+  ]
+
+  const handleDocFileSelect = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    if (!ALLOWED_DOC_TYPES.includes(file.type)) {
+      setImageError('Only PDF, DOCX, and TXT files are supported.')
+      return
+    }
+    if (file.size > MAX_DOC_BYTES) {
+      setImageError('File is too large (max 6MB).')
+      return
+    }
+
+    setImageError(null)
+    const reader = new FileReader()
+    reader.onload = () => {
+      setAttachedFile({ name: file.name, type: file.type, data: reader.result })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removeAttachedFile = () => {
+    setAttachedFile(null)
     setImageError(null)
   }
 
@@ -531,6 +608,12 @@ const Dashboard = () => {
                             className="max-h-64 w-full rounded-2xl border border-white/10 object-cover"
                           />
                         )}
+                        {message.fileName && (
+                          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
+                            <FileText className="h-4 w-4 shrink-0 text-zinc-400" />
+                            <span className="truncate text-xs text-zinc-300">{message.fileName}</span>
+                          </div>
+                        )}
                         {message.content && <p>{message.content}</p>}
                       </div>
                     ) : (
@@ -600,7 +683,7 @@ const Dashboard = () => {
                 </div>
               ))}
 
-              {(pendingMessage || pendingImage) && (
+              {(pendingMessage || pendingImage || pendingFile) && (
                 <div className="max-w-[78%] w-fit ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/10 px-6 py-4 text-zinc-100 backdrop-blur-md text-[15px] space-y-2">
                   {pendingImage && (
                     <img
@@ -608,6 +691,12 @@ const Dashboard = () => {
                       alt="Attached"
                       className="max-h-64 w-full rounded-2xl border border-white/10 object-cover"
                     />
+                  )}
+                  {pendingFile && (
+                    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
+                      <FileText className="h-4 w-4 shrink-0 text-zinc-400" />
+                      <span className="truncate text-xs text-zinc-300">{pendingFile.name}</span>
+                    </div>
                   )}
                   {pendingMessage && <p>{pendingMessage}</p>}
                 </div>
@@ -686,23 +775,40 @@ const Dashboard = () => {
                 onSubmit={handleSubmitMessage}
                 className="relative flex flex-col w-full rounded-[25px] bg-[#090a0f]/90 backdrop-blur-2xl p-3.5 shadow-[0_20px_60px_rgba(0,0,0,0.95)]"
               >
-                {attachedImage && (
-                  <div className="mb-2 px-1">
-                    <div className="relative inline-block">
-                      <img
-                        src={attachedImage}
-                        alt="Selected"
-                        className="h-16 w-16 rounded-xl border border-white/10 object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={removeAttachedImage}
-                        className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 border border-white/20 text-zinc-300 hover:text-white transition cursor-pointer"
-                        title="Remove image"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
+                {(attachedImage || attachedFile) && (
+                  <div className="mb-2 flex flex-wrap items-center gap-2 px-1">
+                    {attachedImage && (
+                      <div className="relative inline-block">
+                        <img
+                          src={attachedImage}
+                          alt="Selected"
+                          className="h-16 w-16 rounded-xl border border-white/10 object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={removeAttachedImage}
+                          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 border border-white/20 text-zinc-300 hover:text-white transition cursor-pointer"
+                          title="Remove image"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+
+                    {attachedFile && (
+                      <div className="relative flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] py-2 pl-3 pr-8">
+                        <FileText className="h-4 w-4 shrink-0 text-zinc-400" />
+                        <span className="max-w-[160px] truncate text-xs text-zinc-300">{attachedFile.name}</span>
+                        <button
+                          type="button"
+                          onClick={removeAttachedFile}
+                          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 border border-white/20 text-zinc-300 hover:text-white transition cursor-pointer"
+                          title="Remove file"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
                 {/* Input Textarea */}
@@ -717,6 +823,7 @@ const Dashboard = () => {
                       handleSubmitMessage(e)
                     }
                   }}
+                  onPaste={handlePaste}
                   placeholder="How can I help you?"
                   disabled={isSending}
                   className="w-full resize-none bg-transparent px-3 py-1.5 text-sm md:text-[15px] text-zinc-100 placeholder:text-zinc-500 outline-none font-normal max-h-32 custom-scrollbar"
@@ -732,15 +839,46 @@ const Dashboard = () => {
                       onChange={handleFileSelect}
                       className="hidden"
                     />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isSending}
-                      className="flex items-center justify-center h-7 w-7 rounded-lg text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
-                      title="Attach image"
-                    >
-                      <ImagePlus className="w-4 h-4" />
-                    </button>
+                    <input
+                      type="file"
+                      ref={docInputRef}
+                      accept=".pdf,.doc,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                      onChange={handleDocFileSelect}
+                      className="hidden"
+                    />
+
+                    <div ref={attachMenuRef} className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsAttachMenuOpen((open) => !open)}
+                        disabled={isSending}
+                        className="flex items-center justify-center h-7 w-7 rounded-lg text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                        title="Add photos & files"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+
+                      {isAttachMenuOpen && (
+                        <div className="absolute bottom-full left-0 mb-2 w-52 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl">
+                          <button
+                            type="button"
+                            onClick={() => { setIsAttachMenuOpen(false); fileInputRef.current?.click() }}
+                            className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm text-zinc-200 transition hover:bg-white/[0.06] cursor-pointer"
+                          >
+                            <ImageIcon className="h-4 w-4 text-zinc-400" />
+                            Photos
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setIsAttachMenuOpen(false); docInputRef.current?.click() }}
+                            className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm text-zinc-200 transition hover:bg-white/[0.06] cursor-pointer"
+                          >
+                            <Paperclip className="h-4 w-4 text-zinc-400" />
+                            Files
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <div ref={modeRef} className="relative flex items-center gap-2">
 
                     </div>
@@ -794,7 +932,7 @@ const Dashboard = () => {
                   ) : (
                     <button
                       type="submit"
-                      disabled={!chatInput.trim() && !attachedImage}
+                      disabled={!chatInput.trim() && !attachedImage && !attachedFile}
                       className="flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 text-white disabled:opacity-20 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.5)] border border-white/20"
                       title="Send message"
                     >
