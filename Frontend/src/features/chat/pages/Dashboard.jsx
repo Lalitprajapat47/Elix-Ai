@@ -9,6 +9,7 @@ import { FishSymbol, Send, Sparkles, Square, ImagePlus, X, Plus, FileText, Image
 import { useChat } from '../hooks/useChat'
 import { useAuth } from '../../auth/hook/useAuth'
 import { setCurrentChatId } from '../chat.slice'
+import CodeBlock from '../components/CodeBlock'
 
 const MODES = [
   { id: 'signal', label: 'Signal', description: 'Short, precise, only the facts' },
@@ -686,8 +687,21 @@ const Dashboard = () => {
                             ),
                             th: ({ children }) => <th className="border-b border-white/10 bg-white/[0.04] px-4 py-2.5 font-semibold text-white">{children}</th>,
                             td: ({ children }) => <td className="border-b border-white/5 px-4 py-2 text-zinc-300">{children}</td>,
-                            code: ({ children }) => <code className="rounded-lg bg-white/10 px-2 py-0.5 text-xs font-mono text-zinc-200 border border-white/5">{children}</code>,
-                            pre: ({ children }) => <pre className="mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/60 p-4 font-mono text-xs shadow-inner">{children}</pre>
+                            code: ({ className, children }) => {
+                              const match = /language-(\w+)/.exec(className || '')
+                              const codeText = String(children).replace(/\n$/, '')
+
+                              if (match) {
+                                return <CodeBlock language={match[1]} code={codeText} />
+                              }
+
+                              return (
+                                <code className="rounded-lg bg-white/10 px-2 py-0.5 text-xs font-mono text-zinc-200 border border-white/5">
+                                  {children}
+                                </code>
+                              )
+                            },
+                            pre: ({ children }) => <>{children}</>
                           }}
                           remarkPlugins={[remarkGfm]}
                         >
