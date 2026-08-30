@@ -20,8 +20,8 @@ const chatSlice = createSlice({
             }
         },
         addNewMessage: (state, action) => {
-            const { chatId, content, role, image } = action.payload
-            state.chats[chatId].messages.push({ content, role, image })
+            const { chatId, content, role, image, fileName } = action.payload
+            state.chats[chatId].messages.push({ content, role, image, fileName })
         },
         addMessages: (state, action) => {
             const { chatId, messages } = action.payload
