@@ -252,28 +252,6 @@ const Dashboard = () => {
     processImageFile(file)
   }
 
-  const handlePaste = (event) => {
-    const items = event.clipboardData?.items
-    if (!items) return
-
-    for (const item of items) {
-      if (item.type && item.type.startsWith('image/')) {
-        const file = item.getAsFile()
-        if (file) {
-          event.preventDefault()
-          processImageFile(file)
-        }
-        break
-      }
-    }
-  }
-
-
-  const removeAttachedImage = () => {
-    setAttachedImage(null)
-    setImageError(null)
-  }
-
   const MAX_DOC_BYTES = 6 * 1024 * 1024
   const ALLOWED_DOC_TYPES = [
     'application/pdf',
@@ -281,9 +259,7 @@ const Dashboard = () => {
     'text/plain',
   ]
 
-  const handleDocFileSelect = (event) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
+  const processDocFile = (file) => {
     if (!file) return
 
     if (!ALLOWED_DOC_TYPES.includes(file.type)) {
@@ -301,6 +277,47 @@ const Dashboard = () => {
       setAttachedFile({ name: file.name, type: file.type, data: reader.result })
     }
     reader.readAsDataURL(file)
+  }
+
+  const handlePaste = (event) => {
+    const pastedFiles = event.clipboardData?.files
+    if (pastedFiles && pastedFiles.length > 0) {
+      const file = pastedFiles[0]
+      event.preventDefault()
+      if (file.type.startsWith('image/')) {
+        processImageFile(file)
+      } else if (ALLOWED_DOC_TYPES.includes(file.type)) {
+        processDocFile(file)
+      } else {
+        setImageError('This file type is not supported. Try an image, PDF, DOCX, or TXT.')
+      }
+      return
+    }
+
+    const items = event.clipboardData?.items
+    if (!items) return
+
+    for (const item of items) {
+      if (item.type && item.type.startsWith('image/')) {
+        const file = item.getAsFile()
+        if (file) {
+          event.preventDefault()
+          processImageFile(file)
+        }
+        break
+      }
+    }
+  }
+
+  const removeAttachedImage = () => {
+    setAttachedImage(null)
+    setImageError(null)
+  }
+
+  const handleDocFileSelect = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    processDocFile(file)
   }
 
   const removeAttachedFile = () => {
