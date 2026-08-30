@@ -1,16 +1,28 @@
 import { generateResponse, generateChatTitle } from "../services/ai.service.js";
+import { extractTextFromFile } from "../services/file.service.js";
 import chatModel from "../models/chat.model.js"
 import messageModel from "../models/message.model.js";
 
 export async function sendMessage(req, res) {
 
-    const { message, chat: chatId, mode, image } = req.body;
+    const { message, chat: chatId, mode, image, file } = req.body;
 
 
     let title = null, chat = null;
+    let fileName = null, fileText = null;
+
+    if (file) {
+        fileName = file.name;
+        try {
+            fileText = await extractTextFromFile(file);
+        } catch (err) {
+            fileText = "[Could not read this file's content]";
+        }
+    }
 
     if (!chatId) {
-        title = await generateChatTitle(message?.trim() ? message : "Shared an image");
+        const titleSeed = message?.trim() ? message : (fileName ? `File: ${fileName}` : "Shared an image");
+        title = await generateChatTitle(titleSeed);
         chat = await chatModel.create({
             user: req.user.id,
             title
@@ -21,6 +33,8 @@ export async function sendMessage(req, res) {
         chat: chatId || chat._id,
         content: message,
         image,
+        fileName,
+        fileText,
         role: "user"
     })
 
