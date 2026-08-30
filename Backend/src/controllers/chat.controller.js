@@ -57,6 +57,51 @@ export async function sendMessage(req, res) {
 
 }
 
+/**
+ * @desc Delete the last AI reply in a chat and generate a fresh one for
+ *       the same conversation context
+ * @route POST /api/chats/regenerate/:chatId
+ * @access Private
+ */
+export async function regenerateResponse(req, res) {
+
+    const { chatId } = req.params;
+    const { mode } = req.body;
+
+    const chat = await chatModel.findOne({ _id: chatId, user: req.user.id });
+
+    if (!chat) {
+        return res.status(404).json({
+            message: "Chat not found"
+        })
+    }
+
+    const lastMessage = await messageModel.findOne({ chat: chatId }).sort({ createdAt: -1 });
+
+    if (!lastMessage || lastMessage.role !== "ai") {
+        return res.status(400).json({
+            message: "Nothing to regenerate"
+        })
+    }
+
+    await messageModel.deleteOne({ _id: lastMessage._id });
+
+    const messages = await messageModel.find({ chat: chatId });
+
+    const result = await generateResponse(messages, mode);
+
+    const aiMessage = await messageModel.create({
+        chat: chatId,
+        content: result,
+        role: "ai"
+    })
+
+    res.status(200).json({
+        aiMessage
+    })
+
+}
+
 export async function getChats(req, res) {
     const user = req.user
 
