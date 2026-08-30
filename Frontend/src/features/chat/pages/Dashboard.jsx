@@ -19,7 +19,7 @@ const MODES = [
 
 const PLACEHOLDER_PHRASES = [
   'How can I help you today?',
-  'Ask anything — get a straight answer...',
+  'Ask anything get a straight answer...',
   'mujhe Ajmer se Jaipur jana hai, kaise jaun?',
   'Summarize this PDF for me...',
   'Explain this code in simple terms...',
