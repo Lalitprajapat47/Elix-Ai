@@ -660,9 +660,25 @@ const Dashboard = () => {
                       <div className="space-y-2">
                         <ReactMarkdown
                           components={{
+                            h1: ({ children }) => <h1 className="mb-3 mt-5 first:mt-0 text-xl font-semibold tracking-tight text-white">{children}</h1>,
+                            h2: ({ children }) => <h2 className="mb-2.5 mt-5 first:mt-0 text-lg font-semibold tracking-tight text-white">{children}</h2>,
+                            h3: ({ children }) => <h3 className="mb-2 mt-4 first:mt-0 text-base font-semibold text-white">{children}</h3>,
+                            h4: ({ children }) => <h4 className="mb-2 mt-3 first:mt-0 text-sm font-semibold uppercase tracking-wide text-zinc-300">{children}</h4>,
                             p: ({ children }) => <p className="mb-3 last:mb-0 font-normal leading-relaxed text-zinc-200">{children}</p>,
-                            ul: ({ children }) => <ul className="mb-3 list-disc pl-5 space-y-1.5 text-zinc-300">{children}</ul>,
-                            ol: ({ children }) => <ol className="mb-3 list-decimal pl-5 space-y-1.5 text-zinc-300">{children}</ol>,
+                            strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+                            em: ({ children }) => <em className="italic text-zinc-200">{children}</em>,
+                            ul: ({ children }) => <ul className="mb-3 list-disc pl-5 space-y-1.5 text-zinc-300 marker:text-zinc-500">{children}</ul>,
+                            ol: ({ children }) => <ol className="mb-3 list-decimal pl-5 space-y-1.5 text-zinc-300 marker:text-zinc-500">{children}</ol>,
+                            li: ({ children }) => <li className="pl-1 leading-relaxed">{children}</li>,
+                            blockquote: ({ children }) => (
+                              <blockquote className="mb-3 border-l-2 border-white/20 pl-4 italic text-zinc-400">{children}</blockquote>
+                            ),
+                            hr: () => <hr className="my-4 border-white/10" />,
+                            a: ({ children, href }) => (
+                              <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline underline-offset-2 hover:text-blue-300">
+                                {children}
+                              </a>
+                            ),
                             table: ({ children }) => (
                               <div className="my-3 overflow-x-auto rounded-xl border border-white/10 bg-zinc-950/80 p-1">
                                 <table className="w-full text-left text-xs text-zinc-300 border-collapse">{children}</table>

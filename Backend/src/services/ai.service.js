@@ -70,6 +70,10 @@ const SYSTEM_PROMPTS = {
           from the results — never paste or describe the full source content.
         - Keep the whole answer scannable — short paragraphs, not a wall
           of text.
+        - Format with markdown: bold the key terms or numbers a reader
+          would scan for, and use a short "## Heading" only if the answer
+          has more than one distinct section — don't add headings to a
+          single short paragraph.
         - If you don't know the answer, say so plainly — don't guess.
     `,
   deep: `
@@ -80,8 +84,11 @@ const SYSTEM_PROMPTS = {
         Guidelines:
         - Explain the full picture: reasoning, relevant background,
           examples, and trade-offs where they help understanding.
-        - Structure the answer with headings or bullet points where it
-          improves readability — avoid one giant undifferentiated paragraph.
+        - Structure the answer with markdown headings ("## Section") and
+          bullet points where it improves readability — avoid one giant
+          undifferentiated paragraph.
+        - Bold the key terms, numbers, or takeaways within each section so
+          the answer is easy to scan, not just read top to bottom.
         - Never open with filler like "Sure, here's..." or "Great question!"
           and never repeat the question back.
         - If the question requires up-to-date information, use the
