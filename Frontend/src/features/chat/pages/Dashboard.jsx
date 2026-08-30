@@ -17,6 +17,14 @@ const MODES = [
   { id: 'deep', label: 'Deep Dive', description: 'Thorough, in-depth explanation' },
 ]
 
+const PLACEHOLDER_PHRASES = [
+  'How can I help you today?',
+  'Ask anything — get a straight answer...',
+  'mujhe Ajmer se Jaipur jana hai, kaise jaun?',
+  'Summarize this PDF for me...',
+  'Explain this code in simple terms...',
+]
+
 const Dashboard = () => {
   // ==========================================
   // 1. HOOKS & GLOBAL STATE
@@ -33,6 +41,7 @@ const Dashboard = () => {
   // 2. LOCAL COMPONENT STATE
   // ==========================================
   const [chatInput, setChatInput] = useState('')
+  const [animatedPlaceholder, setAnimatedPlaceholder] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [pendingMessage, setPendingMessage] = useState(null)
   const [pendingImage, setPendingImage] = useState(null)
@@ -124,6 +133,49 @@ const Dashboard = () => {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isAttachMenuOpen])
+
+  useEffect(() => {
+    if (chatInput) return
+
+    let phraseIndex = 0
+    let charIndex = 0
+    let isDeleting = false
+    let timeoutId
+
+    const TYPE_SPEED = 45
+    const DELETE_SPEED = 25
+    const PAUSE_AFTER_TYPE = 1600
+    const PAUSE_AFTER_DELETE = 300
+
+    const tick = () => {
+      const currentPhrase = PLACEHOLDER_PHRASES[phraseIndex]
+
+      if (!isDeleting) {
+        charIndex++
+        setAnimatedPlaceholder(currentPhrase.slice(0, charIndex))
+        if (charIndex === currentPhrase.length) {
+          isDeleting = true
+          timeoutId = setTimeout(tick, PAUSE_AFTER_TYPE)
+          return
+        }
+        timeoutId = setTimeout(tick, TYPE_SPEED)
+      } else {
+        charIndex--
+        setAnimatedPlaceholder(currentPhrase.slice(0, charIndex))
+        if (charIndex === 0) {
+          isDeleting = false
+          phraseIndex = (phraseIndex + 1) % PLACEHOLDER_PHRASES.length
+          timeoutId = setTimeout(tick, PAUSE_AFTER_DELETE)
+          return
+        }
+        timeoutId = setTimeout(tick, DELETE_SPEED)
+      }
+    }
+
+    timeoutId = setTimeout(tick, 400)
+
+    return () => clearTimeout(timeoutId)
+  }, [chatInput])
 
   // ==========================================
   // 5. EVENT HANDLERS
@@ -905,7 +957,7 @@ const Dashboard = () => {
                     }
                   }}
                   onPaste={handlePaste}
-                  placeholder="How can I help you?"
+                  placeholder={animatedPlaceholder}
                   disabled={isSending}
                   className="w-full resize-none bg-transparent px-3 py-1.5 text-sm md:text-[15px] text-zinc-100 placeholder:text-zinc-500 outline-none font-normal max-h-32 custom-scrollbar"
                 />
