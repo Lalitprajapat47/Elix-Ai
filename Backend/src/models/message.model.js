@@ -17,6 +17,15 @@ const messageSchema = new mongoose.Schema(
             required: false,
         },
 
+        fileName: {
+            type: String,
+            required: false,
+        },
+        fileText: {
+            type: String,
+            required: false,
+        },
+
         role: {
             type: String,
             enum: ['user', 'ai'],
