@@ -1,11 +1,13 @@
 import { Router } from 'express';
-import { sendMessage, getChats, getMessages, deleteChat, renameChat } from "../controllers/chat.controller.js";
+import { sendMessage, getChats, getMessages, deleteChat, renameChat, regenerateResponse } from "../controllers/chat.controller.js";
 import { authUser } from "../middleware/auth.middleware.js";
 
 const chatRouter = Router();
 
 
 chatRouter.post("/message", authUser, sendMessage)
+
+chatRouter.post("/regenerate/:chatId", authUser, regenerateResponse)
 
 chatRouter.get("/", authUser, getChats)
 
