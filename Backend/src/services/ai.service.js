@@ -110,6 +110,10 @@ export async function generateResponse(messages, mode = "signal") {
               ]
             })
           }
+          if (msg.fileText) {
+            const combinedText = `Attached file "${msg.fileName}":\n\n${msg.fileText}\n\n---\n\n${msg.content || "Summarize this file."}`
+            return new HumanMessage(combinedText)
+          }
           return new HumanMessage(msg.content)
         } else if (msg.role == "ai") {
           return new AIMessage(msg.content)
