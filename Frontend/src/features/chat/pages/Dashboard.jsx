@@ -769,63 +769,64 @@ const Dashboard = () => {
                         </ReactMarkdown>
 
 
-                        
+
 
                         {/* Copy Action */}
-                        
-                        {message.sources && message.sources.length > 0 && (
-  <div className="mb-2 flex flex-wrap gap-2">
-    {message.sources.map((source, sourceIndex) => (
-      
-        key={sourceIndex}
-        href={source.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        title={source.title}
-        className="flex max-w-[220px] items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-zinc-400 transition hover:bg-white/[0.08] hover:text-zinc-200"
-      >
-        <Globe className="h-3 w-3 shrink-0" />
-        <span className="truncate">{getHostname(source.url)}</span>
-      </a>
-    ))}
-  </div>
-)}
 
-                        <div className="flex items-center pt-1 text-zinc-500">
-                          
-                          <button
-                            type="button"
-                            onClick={() => handleCopyMessage(message.content, index)}
-                            className="flex items-center gap-1.5 p-1.5 rounded-lg hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer"
-                            title="Copy message"
-                          >
-                            {copiedIndex === index ? (
-                              <svg className="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            ) : (
-                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                              </svg>
-                            )}
-                          </button>
-                          {index === activeMessages.length - 1 && (
-                            <button
-                              type="button"
-                              onClick={handleRegenerateMessage}
-                              disabled={isSending}
-                              className="flex items-center gap-1.5 p-1.5 rounded-lg hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
-                              title="Regenerate response"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
+                        {message.sources && message.sources.length > 0 && (
+                          <div className="mb-2 flex flex-wrap gap-2">
+                            {message.sources.map((source, sourceIndex) => (
+                              <a
+                              key = { sourceIndex }
+                                href = { source.url }
+                                target = "_blank"
+                                rel = "noopener noreferrer"
+                                title = { source.title }
+                                className = "flex max-w-[220px] items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-zinc-400 transition hover:bg-white/[0.08] hover:text-zinc-200"
+                              >
+                                <Globe className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{getHostname(source.url)}</span>
+                              </a>
+                        ))}
                       </div>
                     )}
+
+                    <div className="flex items-center pt-1 text-zinc-500">
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyMessage(message.content, index)}
+                        className="flex items-center gap-1.5 p-1.5 rounded-lg hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer"
+                        title="Copy message"
+                      >
+                        {copiedIndex === index ? (
+                          <svg className="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                        )}
+                      </button>
+                      {index === activeMessages.length - 1 && (
+                        <button
+                          type="button"
+                          onClick={handleRegenerateMessage}
+                          disabled={isSending}
+                          className="flex items-center gap-1.5 p-1.5 rounded-lg hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                          title="Regenerate response"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  {message.role === 'user' && (
+                    )}
+                </div>
+                  {
+                  message.role === 'user' && (
                     <button
                       type="button"
                       onClick={() => handleCopyMessage(message.content, `user-${index}`)}
@@ -843,282 +844,283 @@ const Dashboard = () => {
                         </svg>
                       )}
                     </button>
-                  )}
+                  )
+                }
                 </div>
-              ))}
+          ))}
 
-              {(pendingMessage || pendingImage || pendingFile) && (
-                <div className="max-w-[78%] w-fit ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/10 px-6 py-4 text-zinc-100 backdrop-blur-md text-[15px] space-y-2">
-                  {pendingImage && (
-                    <img
-                      src={pendingImage}
-                      alt="Attached"
-                      className="max-h-64 w-full rounded-2xl border border-white/10 object-cover"
-                    />
-                  )}
-                  {pendingFile && (
-                    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
-                      <FileText className="h-4 w-4 shrink-0 text-zinc-400" />
-                      <span className="truncate text-xs text-zinc-300">{pendingFile.name}</span>
-                    </div>
-                  )}
-                  {pendingMessage && <p>{pendingMessage}</p>}
+          {(pendingMessage || pendingImage || pendingFile) && (
+            <div className="max-w-[78%] w-fit ml-auto rounded-3xl rounded-br-sm bg-zinc-800/80 border border-white/10 px-6 py-4 text-zinc-100 backdrop-blur-md text-[15px] space-y-2">
+              {pendingImage && (
+                <img
+                  src={pendingImage}
+                  alt="Attached"
+                  className="max-h-64 w-full rounded-2xl border border-white/10 object-cover"
+                />
+              )}
+              {pendingFile && (
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
+                  <FileText className="h-4 w-4 shrink-0 text-zinc-400" />
+                  <span className="truncate text-xs text-zinc-300">{pendingFile.name}</span>
                 </div>
               )}
-
-              {isSending && (
-                <div className="mr-auto flex items-center gap-2.5 px-2 py-3">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.06] border border-white/10">
-                    <Sparkles className="sparkle-spin h-3.5 w-3.5 text-amber-400" />
-                  </div>
-                  <span className="text-sm font-medium text-zinc-400">Elix is thinking</span>
-                  <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-400 loading-bounce" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-400 loading-bounce" style={{ animationDelay: '0.15s' }} />
-                    <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-400 loading-bounce" style={{ animationDelay: '0.3s' }} />
-                  </span>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} className="h-4" />
-            </div>
-          ) : (
-            /* Hero Stage */
-            <div className="flex-1 flex flex-col items-center justify-center -mt-8 z-10 w-full max-w-4xl text-center px-4 animate-fade-in">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-zinc-900/60 px-3.5 py-1 mb-6 backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
-                <span className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)] animate-pulse" />
-                <span className="text-[10px] font-mono tracking-[0.18em] uppercase text-zinc-400">
-                  Zero-Noise Architecture
-                </span>
-              </div>
-
-              <h2
-                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                className="pb-2 text-4xl sm:text-5xl md:text-6xl font-semibold tracking-[-0.035em] leading-[1.12] text-transparent bg-clip-text bg-[linear-gradient(180deg,#FFFFFF_0%,#E4E4E7_40%,#71717A_100%)] drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"
-              >
-                High Signal. Zero Noise.
-              </h2>
-
-              <p
-                style={{ fontFamily: "'Inter', sans-serif" }}
-                className="mt-3 text-xs sm:text-sm text-zinc-400 max-w-md font-light leading-relaxed tracking-[-0.01em]"
-              >
-                Instant answers, structured data, and zero conversational filler.
-              </p>
+              {pendingMessage && <p>{pendingMessage}</p>}
             </div>
           )}
 
-          {/* =================================================================== */}
-          {/* 🌟 ANIMATED TRAVELING LASER BEAM INPUT CONSOLE (VIDEO EFFECT)      */}
-          {/* =================================================================== */}
-          <div className="w-full max-w-3xl px-4 pb-6 z-20">
-            <div className="relative w-full group">
-
-              {/* 1. Outer Soft Atmospheric Aura Glow */}
-              <div className="absolute -inset-[2px] rounded-[30px] overflow-hidden pointer-events-none opacity-80 blur-xl transition-opacity group-focus-within:opacity-100">
-                <div
-                  className="animate-beam-spin absolute -inset-[150%] origin-center"
-                  style={{
-                    background: 'conic-gradient(from 0deg, transparent 0%, #ff5722 15%, transparent 35%, #3b82f6 60%, #a855f7 75%, transparent 100%)'
-                  }}
-                />
+          {isSending && (
+            <div className="mr-auto flex items-center gap-2.5 px-2 py-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.06] border border-white/10">
+                <Sparkles className="sparkle-spin h-3.5 w-3.5 text-amber-400" />
               </div>
-
-              {/* 2. Sharp 1px Traveling Border Rim */}
-              <div className="absolute -inset-[1px] rounded-[26px] overflow-hidden pointer-events-none">
-                <div
-                  className="animate-beam-spin absolute -inset-[150%] origin-center"
-                  style={{
-                    background: 'conic-gradient(from 0deg, transparent 0%, #ff7043 12%, transparent 30%, #60a5fa 55%, #c084fc 72%, transparent 100%)'
-                  }}
-                />
-              </div>
-
-              {/* 3. Main Glass Console Container */}
-              <form
-                onSubmit={handleSubmitMessage}
-                className="relative flex flex-col w-full rounded-[25px] bg-[#090a0f]/90 backdrop-blur-2xl p-3.5 shadow-[0_20px_60px_rgba(0,0,0,0.95)]"
-              >
-                {(attachedImage || attachedFile) && (
-                  <div className="mb-2 flex flex-wrap items-center gap-2 px-1">
-                    {attachedImage && (
-                      <div className="relative inline-block">
-                        <img
-                          src={attachedImage}
-                          alt="Selected"
-                          className="h-16 w-16 rounded-xl border border-white/10 object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={removeAttachedImage}
-                          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 border border-white/20 text-zinc-300 hover:text-white transition cursor-pointer"
-                          title="Remove image"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )}
-
-                    {attachedFile && (
-                      <div className="relative flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] py-2 pl-3 pr-8">
-                        <FileText className="h-4 w-4 shrink-0 text-zinc-400" />
-                        <span className="max-w-[160px] truncate text-xs text-zinc-300">{attachedFile.name}</span>
-                        <button
-                          type="button"
-                          onClick={removeAttachedFile}
-                          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 border border-white/20 text-zinc-300 hover:text-white transition cursor-pointer"
-                          title="Remove file"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {/* Input Textarea */}
-                <textarea
-                  ref={inputRef}
-                  rows={1}
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSubmitMessage(e)
-                    }
-                  }}
-                  onPaste={handlePaste}
-                  placeholder={animatedPlaceholder}
-                  disabled={isSending}
-                  className="w-full resize-none bg-transparent px-3 py-1.5 text-sm md:text-[15px] text-zinc-100 placeholder:text-zinc-500 outline-none font-normal max-h-32 custom-scrollbar"
-                />
-
-                {/* Bottom Bar: Mode Tag & Action Button */}
-                <div className="flex items-center justify-between pt-2.5 px-1 border-t border-white/[0.05] mt-1">
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      accept="image/*"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-                    <input
-                      type="file"
-                      ref={docInputRef}
-                      accept=".pdf,.doc,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-                      onChange={handleDocFileSelect}
-                      className="hidden"
-                    />
-
-                    <div ref={attachMenuRef} className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setIsAttachMenuOpen((open) => !open)}
-                        disabled={isSending}
-                        className="flex items-center justify-center h-7 w-7 rounded-lg text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
-                        title="Add photos & files"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-
-                      {isAttachMenuOpen && (
-                        <div className="absolute bottom-full left-0 mb-2 w-52 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl">
-                          <button
-                            type="button"
-                            onClick={() => { setIsAttachMenuOpen(false); fileInputRef.current?.click() }}
-                            className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm text-zinc-200 transition hover:bg-white/[0.06] cursor-pointer"
-                          >
-                            <ImageIcon className="h-4 w-4 text-zinc-400" />
-                            Photos
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { setIsAttachMenuOpen(false); docInputRef.current?.click() }}
-                            className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm text-zinc-200 transition hover:bg-white/[0.06] cursor-pointer"
-                          >
-                            <Paperclip className="h-4 w-4 text-zinc-400" />
-                            Files
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <div ref={modeRef} className="relative flex items-center gap-2">
-
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsModeOpen((open) => !open)}
-                      className="inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 bg-white/[0.04] px-2.5 py-1 rounded-xl border border-white/[0.08] backdrop-blur-md hover:bg-white/[0.07] hover:text-zinc-200 transition cursor-pointer"
-                    >
-                      <Sparkles className="w-3 h-3 text-amber-400" />
-                      <span>{MODES.find((m) => m.id === mode)?.label}</span>
-                      <svg className="w-3 h-3 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-
-                    {isModeOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 w-60 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl">
-                        {MODES.map((m) => (
-                          <button
-                            key={m.id}
-                            type="button"
-                            onClick={() => { setMode(m.id); setIsModeOpen(false) }}
-                            className="flex w-full items-start justify-between gap-2 px-4 py-3 text-left transition hover:bg-white/[0.06] cursor-pointer"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-zinc-100">{m.label}</p>
-                              <p className="mt-0.5 text-[11px] text-zinc-500">{m.description}</p>
-                            </div>
-                            {mode === m.id && (
-                              <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                  </div>
-
-                  {/* Circular Glow Send Trigger */}
-                  {isSending ? (
-                    <button
-                      type="button"
-                      onClick={handleStopGenerating}
-                      className="flex items-center justify-center h-8 w-8 rounded-full bg-white text-black hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/20"
-                      title="Stop generating"
-                    >
-                      <Square className="w-3 h-3 fill-current" />
-                    </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      disabled={!chatInput.trim() && !attachedImage && !attachedFile}
-                      className="flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 text-white disabled:opacity-20 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.5)] border border-white/20"
-                      title="Send message"
-                    >
-                      <Send className="w-3.5 h-3.5 ml-0.5" />
-                    </button>
-                  )}
-                </div>
-              </form>
-
+              <span className="text-sm font-medium text-zinc-400">Elix is thinking</span>
+              <span className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-400 loading-bounce" />
+                <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-400 loading-bounce" style={{ animationDelay: '0.15s' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-400 loading-bounce" style={{ animationDelay: '0.3s' }} />
+              </span>
             </div>
+          )}
 
-            {/* Error Telemetry */}
-            {sendError && (
-              <p className="mt-2 text-center text-xs text-red-400">{sendError}</p>
-            )}
-            {imageError && (
-              <p className="mt-2 text-center text-xs text-red-400">{imageError}</p>
-            )}
+          <div ref={messagesEndRef} className="h-4" />
+      </div>
+      ) : (
+      /* Hero Stage */
+      <div className="flex-1 flex flex-col items-center justify-center -mt-8 z-10 w-full max-w-4xl text-center px-4 animate-fade-in">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-zinc-900/60 px-3.5 py-1 mb-6 backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+          <span className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)] animate-pulse" />
+          <span className="text-[10px] font-mono tracking-[0.18em] uppercase text-zinc-400">
+            Zero-Noise Architecture
+          </span>
+        </div>
+
+        <h2
+          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          className="pb-2 text-4xl sm:text-5xl md:text-6xl font-semibold tracking-[-0.035em] leading-[1.12] text-transparent bg-clip-text bg-[linear-gradient(180deg,#FFFFFF_0%,#E4E4E7_40%,#71717A_100%)] drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"
+        >
+          High Signal. Zero Noise.
+        </h2>
+
+        <p
+          style={{ fontFamily: "'Inter', sans-serif" }}
+          className="mt-3 text-xs sm:text-sm text-zinc-400 max-w-md font-light leading-relaxed tracking-[-0.01em]"
+        >
+          Instant answers, structured data, and zero conversational filler.
+        </p>
+      </div>
+          )}
+
+      {/* =================================================================== */}
+      {/* 🌟 ANIMATED TRAVELING LASER BEAM INPUT CONSOLE (VIDEO EFFECT)      */}
+      {/* =================================================================== */}
+      <div className="w-full max-w-3xl px-4 pb-6 z-20">
+        <div className="relative w-full group">
+
+          {/* 1. Outer Soft Atmospheric Aura Glow */}
+          <div className="absolute -inset-[2px] rounded-[30px] overflow-hidden pointer-events-none opacity-80 blur-xl transition-opacity group-focus-within:opacity-100">
+            <div
+              className="animate-beam-spin absolute -inset-[150%] origin-center"
+              style={{
+                background: 'conic-gradient(from 0deg, transparent 0%, #ff5722 15%, transparent 35%, #3b82f6 60%, #a855f7 75%, transparent 100%)'
+              }}
+            />
           </div>
 
-        </section>
+          {/* 2. Sharp 1px Traveling Border Rim */}
+          <div className="absolute -inset-[1px] rounded-[26px] overflow-hidden pointer-events-none">
+            <div
+              className="animate-beam-spin absolute -inset-[150%] origin-center"
+              style={{
+                background: 'conic-gradient(from 0deg, transparent 0%, #ff7043 12%, transparent 30%, #60a5fa 55%, #c084fc 72%, transparent 100%)'
+              }}
+            />
+          </div>
+
+          {/* 3. Main Glass Console Container */}
+          <form
+            onSubmit={handleSubmitMessage}
+            className="relative flex flex-col w-full rounded-[25px] bg-[#090a0f]/90 backdrop-blur-2xl p-3.5 shadow-[0_20px_60px_rgba(0,0,0,0.95)]"
+          >
+            {(attachedImage || attachedFile) && (
+              <div className="mb-2 flex flex-wrap items-center gap-2 px-1">
+                {attachedImage && (
+                  <div className="relative inline-block">
+                    <img
+                      src={attachedImage}
+                      alt="Selected"
+                      className="h-16 w-16 rounded-xl border border-white/10 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeAttachedImage}
+                      className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 border border-white/20 text-zinc-300 hover:text-white transition cursor-pointer"
+                      title="Remove image"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+
+                {attachedFile && (
+                  <div className="relative flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] py-2 pl-3 pr-8">
+                    <FileText className="h-4 w-4 shrink-0 text-zinc-400" />
+                    <span className="max-w-[160px] truncate text-xs text-zinc-300">{attachedFile.name}</span>
+                    <button
+                      type="button"
+                      onClick={removeAttachedFile}
+                      className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 border border-white/20 text-zinc-300 hover:text-white transition cursor-pointer"
+                      title="Remove file"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            {/* Input Textarea */}
+            <textarea
+              ref={inputRef}
+              rows={1}
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSubmitMessage(e)
+                }
+              }}
+              onPaste={handlePaste}
+              placeholder={animatedPlaceholder}
+              disabled={isSending}
+              className="w-full resize-none bg-transparent px-3 py-1.5 text-sm md:text-[15px] text-zinc-100 placeholder:text-zinc-500 outline-none font-normal max-h-32 custom-scrollbar"
+            />
+
+            {/* Bottom Bar: Mode Tag & Action Button */}
+            <div className="flex items-center justify-between pt-2.5 px-1 border-t border-white/[0.05] mt-1">
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <input
+                  type="file"
+                  ref={docInputRef}
+                  accept=".pdf,.doc,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                  onChange={handleDocFileSelect}
+                  className="hidden"
+                />
+
+                <div ref={attachMenuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsAttachMenuOpen((open) => !open)}
+                    disabled={isSending}
+                    className="flex items-center justify-center h-7 w-7 rounded-lg text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                    title="Add photos & files"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+
+                  {isAttachMenuOpen && (
+                    <div className="absolute bottom-full left-0 mb-2 w-52 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl">
+                      <button
+                        type="button"
+                        onClick={() => { setIsAttachMenuOpen(false); fileInputRef.current?.click() }}
+                        className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm text-zinc-200 transition hover:bg-white/[0.06] cursor-pointer"
+                      >
+                        <ImageIcon className="h-4 w-4 text-zinc-400" />
+                        Photos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setIsAttachMenuOpen(false); docInputRef.current?.click() }}
+                        className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm text-zinc-200 transition hover:bg-white/[0.06] cursor-pointer"
+                      >
+                        <Paperclip className="h-4 w-4 text-zinc-400" />
+                        Files
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div ref={modeRef} className="relative flex items-center gap-2">
+
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsModeOpen((open) => !open)}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 bg-white/[0.04] px-2.5 py-1 rounded-xl border border-white/[0.08] backdrop-blur-md hover:bg-white/[0.07] hover:text-zinc-200 transition cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  <span>{MODES.find((m) => m.id === mode)?.label}</span>
+                  <svg className="w-3 h-3 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
+                {isModeOpen && (
+                  <div className="absolute bottom-full left-0 mb-2 w-60 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl">
+                    {MODES.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => { setMode(m.id); setIsModeOpen(false) }}
+                        className="flex w-full items-start justify-between gap-2 px-4 py-3 text-left transition hover:bg-white/[0.06] cursor-pointer"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-zinc-100">{m.label}</p>
+                          <p className="mt-0.5 text-[11px] text-zinc-500">{m.description}</p>
+                        </div>
+                        {mode === m.id && (
+                          <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+              </div>
+
+              {/* Circular Glow Send Trigger */}
+              {isSending ? (
+                <button
+                  type="button"
+                  onClick={handleStopGenerating}
+                  className="flex items-center justify-center h-8 w-8 rounded-full bg-white text-black hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/20"
+                  title="Stop generating"
+                >
+                  <Square className="w-3 h-3 fill-current" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim() && !attachedImage && !attachedFile}
+                  className="flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 text-white disabled:opacity-20 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.5)] border border-white/20"
+                  title="Send message"
+                >
+                  <Send className="w-3.5 h-3.5 ml-0.5" />
+                </button>
+              )}
+            </div>
+          </form>
+
+        </div>
+
+        {/* Error Telemetry */}
+        {sendError && (
+          <p className="mt-2 text-center text-xs text-red-400">{sendError}</p>
+        )}
+        {imageError && (
+          <p className="mt-2 text-center text-xs text-red-400">{imageError}</p>
+        )}
       </div>
+
+    </section>
+      </div >
     </main >
   )
 }
