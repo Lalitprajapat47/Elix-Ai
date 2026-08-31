@@ -6,8 +6,8 @@ const api = axios.create({
 })
 
 
-export const sendMessage = async ({ message, chatId, signal, mode, image, file }) => {
-    const response = await api.post("/api/chats/message", { message, chat: chatId, mode, image, file }, { signal })
+export const sendMessage = async ({ message, chatId, signal, mode, image, file, aiModel }) => {
+    const response = await api.post("/api/chats/message", { message, chat: chatId, mode, image, file, aiModel }, { signal })
     return response.data
 }
 
@@ -31,7 +31,7 @@ export const renameChat = async (chatId, title) => {
     return response.data
 }
 
-export const regenerateMessage = async ({ chatId, mode, signal }) => {
-    const response = await api.post(`/api/chats/regenerate/${chatId}`, { mode }, { signal })
+export const regenerateMessage = async ({ chatId, mode, signal, aiModel }) => {
+    const response = await api.post(`/api/chats/regenerate/${chatId}`, { mode, aiModel }, { signal })
     return response.data
 }
