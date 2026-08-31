@@ -30,6 +30,16 @@ const agent = createAgent({
   tools: [searchInternetTool],
 })
 
+const geminiAgent = createAgent({
+  model: geminiModel,
+  tools: [searchInternetTool],
+})
+
+const AGENTS = {
+  mistral: agent,
+  gemini: geminiAgent,
+}
+
 const SYSTEM_PROMPTS = {
   signal: `
         You are Elix — an accuracy-first assistant. Your core principle is
@@ -125,12 +135,13 @@ function extractSources(agentMessages) {
   return sources
 }
 
-export async function generateResponse(messages, mode = "signal") {
+export async function generateResponse(messages, mode = "signal", aiModel = "mistral") {
   console.log(messages)
 
   const systemPrompt = SYSTEM_PROMPTS[mode] || SYSTEM_PROMPTS.signal
+  const selectedAgent = AGENTS[aiModel] || AGENTS.mistral
 
-  const response = await agent.invoke({
+  const response = await selectedAgent.invoke({
     messages: [
       new SystemMessage(systemPrompt),
       ...(messages.map(msg => {
@@ -154,10 +165,10 @@ export async function generateResponse(messages, mode = "signal") {
       }))]
   });
 
-      const text = response.messages[ response.messages.length - 1 ].text;
-    const sources = extractSources(response.messages);
+  const text = response.messages[response.messages.length - 1].text;
+  const sources = extractSources(response.messages);
 
-    return { text, sources };
+  return { text, sources };
 
 }
 
