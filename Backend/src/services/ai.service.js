@@ -4,44 +4,55 @@ import { HumanMessage, SystemMessage, AIMessage, tool, createAgent } from "langc
 import * as z from "zod";
 import { searchInternet } from "./internet.service.js";
 
-const geminiModel = new ChatGoogleGenerativeAI({
-  model: "gemini-flash-latest",
-  apiKey: process.env.GEMINI_API_KEY
-});
-
 const mistralModel = new ChatMistralAI({
-  model: "mistral-medium-latest",
-  apiKey: process.env.MISTRAL_API_KEY
+    model: "mistral-medium-latest",
+    apiKey: process.env.MISTRAL_API_KEY
 })
 
 const searchInternetTool = tool(
-  searchInternet,
-  {
-    name: "searchInternet",
-    description: "Use this tool to get the latest information from the internet.",
-    schema: z.object({
-      query: z.string().describe("The search query to look up on the internet.")
-    })
-  }
+    searchInternet,
+    {
+        name: "searchInternet",
+        description: "Use this tool to get the latest information from the internet.",
+        schema: z.object({
+            query: z.string().describe("The search query to look up on the internet.")
+        })
+    }
 )
 
 const agent = createAgent({
-  model: mistralModel,
-  tools: [searchInternetTool],
+    model: mistralModel,
+    tools: [ searchInternetTool ],
 })
 
-const geminiAgent = createAgent({
-  model: geminiModel,
-  tools: [searchInternetTool],
-})
+// Tried in order — if one doesn't respond in time (or errors), the next
+// one is tried automatically. First entry is the one confirmed working.
+const GEMINI_FALLBACK_MODELS = [
+    "gemini-3-flash-preview",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+]
+
+const geminiAgentsByModel = new Map()
+
+function getGeminiAgent(modelName) {
+    if (!geminiAgentsByModel.has(modelName)) {
+        const model = new ChatGoogleGenerativeAI({
+            model: modelName,
+            apiKey: process.env.GEMINI_API_KEY,
+        })
+        geminiAgentsByModel.set(modelName, createAgent({ model, tools: [ searchInternetTool ] }))
+    }
+    return geminiAgentsByModel.get(modelName)
+}
 
 const AGENTS = {
-  mistral: agent,
-  gemini: geminiAgent,
+    mistral: agent,
 }
 
 const SYSTEM_PROMPTS = {
-  signal: `
+    signal: `
         You are Elix — an accuracy-first assistant. Your core principle is
         "high signal, zero noise": every answer must be short, structured,
         and only contain what the user actually asked for.
@@ -62,7 +73,7 @@ const SYSTEM_PROMPTS = {
           short bullet points, not a wall of text.
         - If you don't know the answer, say so in one line — don't pad or guess.
     `,
-  context: `
+    context: `
         You are Elix — an accuracy-first assistant. Answer directly first,
         then add just enough context to make the answer useful — never
         padding, never repeating the question back.
@@ -86,7 +97,7 @@ const SYSTEM_PROMPTS = {
           single short paragraph.
         - If you don't know the answer, say so plainly — don't guess.
     `,
-  deep: `
+    deep: `
         You are Elix — an accuracy-first assistant. The user has asked for
         a thorough, in-depth answer, so take the space needed to genuinely
         explain the topic — but every sentence must still earn its place.
@@ -110,83 +121,118 @@ const SYSTEM_PROMPTS = {
 }
 
 function extractSources(agentMessages) {
-  const sources = []
-  const seenUrls = new Set()
+    const sources = []
+    const seenUrls = new Set()
 
-  for (const msg of agentMessages) {
-    if (msg?.name !== "searchInternet") continue
-    try {
-      const parsed = JSON.parse(msg.content)
-      const results = parsed?.results || []
-      for (const result of results) {
-        if (result?.url && !seenUrls.has(result.url)) {
-          seenUrls.add(result.url)
-          sources.push({
-            title: result.title || result.url,
-            url: result.url,
-          })
+    for (const msg of agentMessages) {
+        if (msg?.name !== "searchInternet") continue
+        try {
+            const parsed = JSON.parse(msg.content)
+            const results = parsed?.results || []
+            for (const result of results) {
+                if (result?.url && !seenUrls.has(result.url)) {
+                    seenUrls.add(result.url)
+                    sources.push({
+                        title: result.title || result.url,
+                        url: result.url,
+                    })
+                }
+            }
+        } catch (err) {
+            // malformed tool output — skip it, nothing to cite from this call
         }
-      }
-    } catch (err) {
-      // malformed tool output — skip it, nothing to cite from this call
     }
-  }
 
-  return sources
+    return sources
+}
+
+const AGENT_TIMEOUT_MS = 30000;
+const GEMINI_FALLBACK_TIMEOUT_MS = 8000;
+
+function withTimeout(promise, ms, label) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s. Please try again.`)), ms)
+        ),
+    ]);
+}
+
+async function invokeWithGeminiFallback(invokeArgs) {
+    let lastError = null
+
+    for (const modelName of GEMINI_FALLBACK_MODELS) {
+        try {
+            const geminiAgent = getGeminiAgent(modelName)
+            const response = await withTimeout(
+                geminiAgent.invoke(invokeArgs),
+                GEMINI_FALLBACK_TIMEOUT_MS,
+                `Gemini (${modelName})`
+            )
+            return response
+        } catch (err) {
+            console.error(`Gemini model "${modelName}" failed, trying next:`, err.message)
+            lastError = err
+        }
+    }
+
+    throw lastError || new Error("All Gemini models failed to respond.")
 }
 
 export async function generateResponse(messages, mode = "signal", aiModel = "mistral") {
-  console.log(messages)
+    console.log(messages)
 
-  const systemPrompt = SYSTEM_PROMPTS[mode] || SYSTEM_PROMPTS.signal
-  const selectedAgent = AGENTS[aiModel] || AGENTS.mistral
+    const systemPrompt = SYSTEM_PROMPTS[ mode ] || SYSTEM_PROMPTS.signal
 
-  const response = await selectedAgent.invoke({
-    messages: [
-      new SystemMessage(systemPrompt),
-      ...(messages.map(msg => {
-        if (msg.role == "user") {
-          if (msg.image) {
-            return new HumanMessage({
-              content: [
-                { type: "text", text: msg.content || "Describe this image." },
-                { type: "image_url", image_url: msg.image },
-              ]
-            })
-          }
-          if (msg.fileText) {
-            const combinedText = `Attached file "${msg.fileName}":\n\n${msg.fileText}\n\n---\n\n${msg.content || "Summarize this file."}`
-            return new HumanMessage(combinedText)
-          }
-          return new HumanMessage(msg.content)
-        } else if (msg.role == "ai") {
-          return new AIMessage(msg.content)
-        }
-      }))]
-  });
+    const invokeArgs = {
+        messages: [
+            new SystemMessage(systemPrompt),
+            ...(messages.map(msg => {
+                if (msg.role == "user") {
+                    if (msg.image) {
+                        return new HumanMessage({
+                            content: [
+                                { type: "text", text: msg.content || "Describe this image." },
+                                { type: "image_url", image_url: msg.image },
+                            ]
+                        })
+                    }
+                    if (msg.fileText) {
+                        const combinedText = `Attached file "${msg.fileName}":\n\n${msg.fileText}\n\n---\n\n${msg.content || "Summarize this file."}`
+                        return new HumanMessage(combinedText)
+                    }
+                    return new HumanMessage(msg.content)
+                } else if (msg.role == "ai") {
+                    return new AIMessage(msg.content)
+                }
+            })) ]
+    }
 
-  const text = response.messages[response.messages.length - 1].text;
-  const sources = extractSources(response.messages);
+    const response = aiModel === "gemini"
+        ? await invokeWithGeminiFallback(invokeArgs)
+        : await withTimeout(agent.invoke(invokeArgs), AGENT_TIMEOUT_MS, "AI response");
 
-  return { text, sources };
+    const text = response.messages[ response.messages.length - 1 ].text;
+    const sources = extractSources(response.messages);
+
+    return { text, sources };
 
 }
 
-
 export async function generateChatTitle(message) {
 
-  const response = await mistralModel.invoke([
-    new SystemMessage(`
+    const response = await mistralModel.invoke([
+        new SystemMessage(`
             You are a helpful assistant that generates concise and descriptive titles for chat conversations.
             
             User will provide you with the first message of a chat conversation, and you will generate a title that captures the essence of the conversation in 2-4 words. The title should be clear, relevant, and engaging, giving users a quick understanding of the chat's topic.    
         `),
-    new HumanMessage(`
+        new HumanMessage(`
             Generate a title for a chat conversation based on the following first message:
             "${message}"
             `)
-  ])
+    ])
 
-  return response.text;
+    return response.text;
 
 }
