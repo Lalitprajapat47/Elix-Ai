@@ -5,7 +5,7 @@ import messageModel from "../models/message.model.js";
 
 export async function sendMessage(req, res) {
 
-    const { message, chat: chatId, mode, image, file } = req.body;
+    const { message, chat: chatId, mode, image, file, aiModel } = req.body;
 
 
     let title = null, chat = null;
@@ -40,7 +40,7 @@ export async function sendMessage(req, res) {
 
     const messages = await messageModel.find({ chat: chatId || chat._id })
 
-    const result = await generateResponse(messages, mode);
+    const result = await generateResponse(messages, mode, aiModel);
 
     const aiMessage = await messageModel.create({
         chat: chatId || chat._id,
@@ -66,7 +66,7 @@ export async function sendMessage(req, res) {
 export async function regenerateResponse(req, res) {
 
     const { chatId } = req.params;
-    const { mode } = req.body;
+    const { mode, aiModel } = req.body;
 
     const chat = await chatModel.findOne({ _id: chatId, user: req.user.id });
 
@@ -88,7 +88,7 @@ export async function regenerateResponse(req, res) {
 
     const messages = await messageModel.find({ chat: chatId });
 
-    const result = await generateResponse(messages, mode);
+    const result = await generateResponse(messages, mode, aiModel);
 
     const aiMessage = await messageModel.create({
         chat: chatId,
