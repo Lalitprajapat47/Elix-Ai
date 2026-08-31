@@ -7,53 +7,60 @@ export async function sendMessage(req, res) {
 
     const { message, chat: chatId, mode, image, file, aiModel } = req.body;
 
+    try {
+        let title = null, chat = null;
+        let fileName = null, fileText = null;
 
-    let title = null, chat = null;
-    let fileName = null, fileText = null;
-
-    if (file) {
-        fileName = file.name;
-        try {
-            fileText = await extractTextFromFile(file);
-        } catch (err) {
-            fileText = "[Could not read this file's content]";
+        if (file) {
+            fileName = file.name;
+            try {
+                fileText = await extractTextFromFile(file);
+            } catch (err) {
+                fileText = "[Could not read this file's content]";
+            }
         }
-    }
 
-    if (!chatId) {
-        const titleSeed = message?.trim() ? message : (fileName ? `File: ${fileName}` : "Shared an image");
-        title = await generateChatTitle(titleSeed);
-        chat = await chatModel.create({
-            user: req.user.id,
-            title
+        if (!chatId) {
+            const titleSeed = message?.trim() ? message : (fileName ? `File: ${fileName}` : "Shared an image");
+            title = await generateChatTitle(titleSeed);
+            chat = await chatModel.create({
+                user: req.user.id,
+                title
+            })
+        }
+
+        const userMessage = await messageModel.create({
+            chat: chatId || chat._id,
+            content: message,
+            image,
+            fileName,
+            fileText,
+            role: "user"
+        })
+
+        const messages = await messageModel.find({ chat: chatId || chat._id })
+
+        const result = await generateResponse(messages, mode, aiModel);
+
+        const aiMessage = await messageModel.create({
+            chat: chatId || chat._id,
+            content: result.text,
+            sources: result.sources,
+            role: "ai"
+        })
+
+
+        res.status(201).json({
+            title,
+            chat,
+            aiMessage
+        })
+    } catch (error) {
+        console.error("sendMessage error:", error)
+        res.status(500).json({
+            message: error.message || "Failed to generate a response. Please try again."
         })
     }
-
-    const userMessage = await messageModel.create({
-        chat: chatId || chat._id,
-        content: message,
-        image,
-        fileName,
-        fileText,
-        role: "user"
-    })
-
-    const messages = await messageModel.find({ chat: chatId || chat._id })
-
-    const result = await generateResponse(messages, mode, aiModel);
-
-    const aiMessage = await messageModel.create({
-        chat: chatId || chat._id,
-        content: result.text,
-        sources: result.sources,
-        role: "ai"
-    })
-
-    res.status(201).json({
-        title,
-        chat,
-        aiMessage
-    })
 
 }
 
@@ -68,38 +75,45 @@ export async function regenerateResponse(req, res) {
     const { chatId } = req.params;
     const { mode, aiModel } = req.body;
 
-    const chat = await chatModel.findOne({ _id: chatId, user: req.user.id });
+    try {
+        const chat = await chatModel.findOne({ _id: chatId, user: req.user.id });
 
-    if (!chat) {
-        return res.status(404).json({
-            message: "Chat not found"
+        if (!chat) {
+            return res.status(404).json({
+                message: "Chat not found"
+            })
+        }
+
+        const lastMessage = await messageModel.findOne({ chat: chatId }).sort({ createdAt: -1 });
+
+        if (!lastMessage || lastMessage.role !== "ai") {
+            return res.status(400).json({
+                message: "Nothing to regenerate"
+            })
+        }
+
+        await messageModel.deleteOne({ _id: lastMessage._id });
+
+        const messages = await messageModel.find({ chat: chatId });
+
+        const result = await generateResponse(messages, mode, aiModel);
+
+        const aiMessage = await messageModel.create({
+            chat: chatId,
+            content: result.text,
+            sources: result.sources,
+            role: "ai"
+        })
+
+        res.status(200).json({
+            aiMessage
+        })
+    } catch (error) {
+        console.error("regenerateResponse error:", error)
+        res.status(500).json({
+            message: error.message || "Failed to regenerate response. Please try again."
         })
     }
-
-    const lastMessage = await messageModel.findOne({ chat: chatId }).sort({ createdAt: -1 });
-
-    if (!lastMessage || lastMessage.role !== "ai") {
-        return res.status(400).json({
-            message: "Nothing to regenerate"
-        })
-    }
-
-    await messageModel.deleteOne({ _id: lastMessage._id });
-
-    const messages = await messageModel.find({ chat: chatId });
-
-    const result = await generateResponse(messages, mode, aiModel);
-
-    const aiMessage = await messageModel.create({
-        chat: chatId,
-        content: result.text,
-        sources: result.sources,
-        role: "ai"
-    })
-
-    res.status(200).json({
-        aiMessage
-    })
 
 }
 
