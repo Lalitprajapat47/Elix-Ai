@@ -9,11 +9,11 @@ export const useChat = () => {
     const dispatch = useDispatch()
 
 
-    async function handleSendMessage({ message, chatId, signal, mode, image, file }) {
+    async function handleSendMessage({ message, chatId, signal, mode, image, file, aiModel }) {
         dispatch(setLoading(true))
         dispatch(setError(null))
         try {
-            const data = await sendMessage({ message, chatId, signal, mode, image, file })
+            const data = await sendMessage({ message, chatId, signal, mode, image, file, aiModel })
             const { chat, aiMessage } = data
             if (!chatId)
                 dispatch(createNewChat({
@@ -102,11 +102,11 @@ export const useChat = () => {
         }
     }
 
-    async function handleRegenerateMessage({ chatId, mode, signal }) {
+    async function handleRegenerateMessage({ chatId, mode, signal, aiModel }) {
         dispatch(setLoading(true))
         dispatch(setError(null))
         try {
-            const data = await regenerateMessage({ chatId, mode, signal })
+            const data = await regenerateMessage({ chatId, mode, signal, aiModel })
             dispatch(replaceLastMessage({
                 chatId,
                 content: data.aiMessage.content,
