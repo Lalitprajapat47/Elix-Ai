@@ -1,6 +1,9 @@
 import userModel from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../services/mail.service.js";
+import { OAuth2Client } from "google-auth-library";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID2);
 
 
 /**
@@ -14,7 +17,7 @@ export async function register(req, res) {
     const { username, email, password } = req.body;
 
     const isUserAlreadyExists = await userModel.findOne({
-        $or: [ { email }, { username } ]
+        $or: [{ email }, { username }]
     })
 
     if (isUserAlreadyExists) {
@@ -151,6 +154,81 @@ export async function logout(req, res) {
     res.status(200).json({
         message: "Logged out successfully",
         success: true
+    })
+}
+
+/**
+ * @desc Sign up or log in a user using a Google ID token
+ * @route POST /api/auth/google
+ * @access Public
+ * @body { credential }
+ */
+export async function googleLogin(req, res) {
+    const { credential } = req.body;
+
+    if (!credential) {
+        return res.status(400).json({
+            message: "Missing Google credential",
+            success: false,
+            err: "Missing credential"
+        })
+    }
+
+    let payload;
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID2,
+        });
+        payload = ticket.getPayload();
+    } catch (err) {
+        return res.status(401).json({
+            message: "Invalid Google credential",
+            success: false,
+            err: err.message
+        })
+    }
+
+    const { email, name, sub: googleId } = payload;
+
+    let user = await userModel.findOne({ $or: [{ email }, { googleId }] });
+
+    if (!user) {
+        let baseUsername = (name || email.split("@")[0]).replace(/\s+/g, "").toLowerCase();
+        let username = baseUsername;
+        let suffix = 0;
+        while (await userModel.findOne({ username })) {
+            suffix++;
+            username = `${baseUsername}${suffix}`;
+        }
+
+        user = await userModel.create({
+            username,
+            email,
+            googleId,
+            verified: true,
+        });
+    } else if (!user.googleId) {
+        user.googleId = googleId;
+        user.verified = true;
+        await user.save();
+    }
+
+    const token = jwt.sign({
+        id: user._id,
+        username: user.username,
+    }, process.env.JWT_SECRET, { expiresIn: '7d' })
+
+    res.cookie("token", token)
+
+    res.status(200).json({
+        message: "Logged in with Google successfully",
+        success: true,
+        user: {
+            id: user._id,
+            username: user.username,
+            email: user.email
+        }
     })
 }
 
