@@ -5,6 +5,7 @@ import { FishSymbol, ArrowRight, ShieldCheck } from 'lucide-react'
 
 // Hooks
 import { useAuth } from '../hook/useAuth'
+import GoogleSignInButton from '../components/GoogleSignInButton'
 
 // ================= STITCH-GRADE SUBTLE MICRO-ELASTIC DOT CANVAS =================
 const InteractiveDotCanvas = () => {
@@ -71,7 +72,7 @@ const InteractiveDotCanvas = () => {
           const norm = (mouse.radius - distance) / mouse.radius
           const force = Math.sin(norm * (Math.PI / 2)) * 4.5
           const angle = Math.atan2(dy, dx)
-          
+
           const targetX = this.originX - Math.cos(angle) * force
           const targetY = this.originY - Math.sin(angle) * force
 
@@ -99,7 +100,7 @@ const InteractiveDotCanvas = () => {
 
         ctx.beginPath()
         ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI * 2)
-        
+
         // Soft metallic glow near cursor
         if (isNear) {
           const intensity = 1 - dist / mouse.radius
@@ -173,7 +174,7 @@ const Login = () => {
 
   return (
     <main className="relative flex min-h-screen w-full flex-col justify-between bg-[#040507] px-6 py-8 font-sans text-zinc-100 selection:bg-zinc-700 selection:text-white overflow-hidden select-none">
-      
+
       {/* ================= BACKGROUND MONOCHROME SILVER AMBIENT ================= */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         {/* Soft upper ambient silver cloud */}
@@ -207,10 +208,10 @@ const Login = () => {
 
       {/* ================= FORM SECTION ================= */}
       <div className="relative z-10 mx-auto flex w-full max-w-md flex-col items-center justify-center py-10">
-        
+
         {/* Header Typography */}
         <div className="text-center">
-          <h1 
+          <h1
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             className="text-3xl md:text-4xl font-semibold tracking-tight text-white drop-shadow-md"
           >
@@ -241,7 +242,7 @@ const Login = () => {
                 className="w-full bg-transparent px-4 py-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none transition-all"
               />
             </div>
-            
+
             <div className="border-t border-white/[0.07]">
               <input
                 type="password"
@@ -265,6 +266,16 @@ const Login = () => {
             </button>
           </div>
         </form>
+
+        <div className="mt-6 flex w-full items-center gap-3 text-[11px] uppercase tracking-wider text-zinc-600">
+          <div className="h-px flex-1 bg-white/[0.08]" />
+          <span>Or</span>
+          <div className="h-px flex-1 bg-white/[0.08]" />
+        </div>
+
+        <div className="mt-6 w-full">
+          <GoogleSignInButton />
+        </div>
 
         <div className="mt-8 flex flex-col items-center gap-2 text-center text-xs">
           <Link
