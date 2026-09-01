@@ -18,8 +18,14 @@ const userSchema = new mongoose.Schema(
         },
         password: {
             type: String,
-            required: true,
+            required: function () { return !this.googleId },
             minlength: 6,
+        },
+        googleId: {
+            type: String,
+            required: false,
+            unique: true,
+            sparse: true,
         },
         verified: {
             type: Boolean,
@@ -35,6 +41,7 @@ userSchema.pre('save', async function () {
 });
 
 userSchema.methods.comparePassword = function (candidatePassword) {
+    if (!this.password) return Promise.resolve(false);
     return bcrypt.compare(candidatePassword, this.password);
 };
 
