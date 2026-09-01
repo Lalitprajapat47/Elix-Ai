@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, verifyEmail, login, getMe, logout } from "../controllers/auth.controller.js";
+import { register, verifyEmail, login, getMe, logout, googleLogin } from "../controllers/auth.controller.js";
 import { registerValidator, loginValidator } from "../validators/auth.validator.js";
 import { authUser } from "../middleware/auth.middleware.js";
 
@@ -22,7 +22,13 @@ authRouter.post("/register", registerValidator, register);
  */
 authRouter.post("/login", loginValidator, login)
 
-
+/**
+ * @route POST /api/auth/google
+ * @desc Sign up or log in a user using a Google ID token
+ * @access Public
+ * @body { credential }
+ */
+authRouter.post("/google", googleLogin)
 
 /**
  * @route GET /api/auth/get-me
