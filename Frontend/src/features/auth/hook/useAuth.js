@@ -1,5 +1,5 @@
 import { useDispatch } from "react-redux";
-import { register, login, getMe, logout } from "../service/auth.api";
+import { register, login, getMe, logout, googleLogin } from "../service/auth.api";
 import { setUser, setLoading, setError } from "../auth.slice";
 
 
@@ -56,11 +56,25 @@ export function useAuth() {
         }
     }
 
+    async function handleGoogleLogin(credential) {
+        try {
+            dispatch(setLoading(true))
+            const data = await googleLogin(credential)
+            dispatch(setUser(data.user))
+        } catch (err) {
+            dispatch(setError(err.response?.data?.message || "Google sign-in failed"))
+        } finally {
+            dispatch(setLoading(false))
+        }
+    }
+
     return {
         handleRegister,
         handleLogin,
         handleGetMe,
         handleLogout,
+        handleGoogleLogin,
     }
 
 }
+
