@@ -9,10 +9,14 @@ const GoogleSignInButton = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
     if (!clientId) return
 
-    let intervalId
+    let intervalId = null
+    let initialized = false
 
     const tryInit = () => {
+      if (initialized) return
       if (!window.google?.accounts?.id) return
+
+      initialized = true
 
       window.google.accounts.id.initialize({
         client_id: clientId,
@@ -29,13 +33,17 @@ const GoogleSignInButton = () => {
         width: 340,
       })
 
-      clearInterval(intervalId)
+      if (intervalId) clearInterval(intervalId)
     }
 
     tryInit()
-    intervalId = setInterval(tryInit, 200)
+    if (!initialized) {
+      intervalId = setInterval(tryInit, 200)
+    }
 
-    return () => clearInterval(intervalId)
+    return () => {
+      if (intervalId) clearInterval(intervalId)
+    }
   }, [])
 
   return <div ref={buttonRef} className="flex justify-center" />
