@@ -4,7 +4,7 @@
 
 ### High Signal. Zero Noise.
 
-An AI chat assistant built to give **short, accurate, structured answers** - not endless paragraphs. Ask a question, get the facts, move on.
+An AI chat assistant built to give **short, accurate, structured answers** — not endless paragraphs. Ask a question, get the facts, move on.
 
 [![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev)
 [![Node.js](https://img.shields.io/badge/Node.js-Express%205-339933?logo=node.js&logoColor=white)](https://expressjs.com)
@@ -13,7 +13,7 @@ An AI chat assistant built to give **short, accurate, structured answers** - not
 [![TailwindCSS](https://img.shields.io/badge/Tailwind%20CSS-4-38BDF8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![License](https://img.shields.io/badge/License-ISC-blue)](#license)
 
-[Live Demo](#) · [Report a Bug](#) · [Request a Feature](#)
+[🔗 Live Demo](https://elix-ai-2i3g.vercel.app) · [Report a Bug](https://github.com/Lalitprajapat47/Elix-Ai/issues) · [Request a Feature](https://github.com/Lalitprajapat47/Elix-Ai/issues)
 
 </div>
 
@@ -188,10 +188,10 @@ The app will be available at `http://localhost:5173`.
 
 Elix is deployed as two independent services:
 
-| Service | Platform | Notes |
-|---|---|---|
-| **Frontend** | [Vercel](https://vercel.com) | Static Vite build, SPA rewrites configured |
-| **Backend** | [Render](https://render.com) | Persistent Node.js web service (required for Socket.io) |
+| Service | Platform | URL | Notes |
+|---|---|---|---|
+| **Frontend** | [Vercel](https://vercel.com) | [elix-ai-2i3g.vercel.app](https://elix-ai-2i3g.vercel.app) | Static Vite build, SPA rewrites configured |
+| **Backend** | [Render](https://render.com) | [elix-ai-9pz0.onrender.com](https://elix-ai-9pz0.onrender.com) | Persistent Node.js web service (required for Socket.io) |
 
 Set the environment variables listed above in each platform's dashboard. Make sure `FRONTEND_URL` (backend) and `VITE_API_URL` (frontend) point to each other's deployed URLs, and that your MongoDB cluster allows connections from your hosting provider's IPs.
 
