@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { sendEmail } from "../services/mail.service.js";
 import { OAuth2Client } from "google-auth-library";
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID2);
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -11,7 +11,7 @@ const cookieOptions = {
     httpOnly: true,
     secure: isProd,
     sameSite: isProd ? "none" : "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
 
@@ -25,48 +25,54 @@ export async function register(req, res) {
 
     const { username, email, password } = req.body;
 
-    const isUserAlreadyExists = await userModel.findOne({
-        $or: [{ email }, { username }]
-    })
+    try {
+        const isUserAlreadyExists = await userModel.findOne({
+            $or: [ { email }, { username } ]
+        })
 
-    if (isUserAlreadyExists) {
-        return res.status(400).json({
-            message: "User with this email or username already exists",
+        if (isUserAlreadyExists) {
+            return res.status(400).json({
+                message: "User with this email or username already exists",
+                success: false,
+                err: "User already exists"
+            })
+        }
+
+        const user = await userModel.create({ username, email, password })
+
+        const emailVerificationToken = jwt.sign({
+            email: user.email,
+        }, process.env.JWT_SECRET)
+
+        await sendEmail({
+            to: email,
+            subject: "Welcome to Perplexity!",
+            html: `
+                    <p>Hi ${username},</p>
+                    <p>Thank you for registering at <strong>Perplexity</strong>. We're excited to have you on board!</p>
+                    <p>Please verify your email address by clicking the link below:</p>
+                    <a href="${process.env.BACKEND_URL || "http://localhost:3000"}/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a>
+                    <p>If you did not create an account, please ignore this email.</p>
+                    <p>Best regards,<br>The Perplexity Team</p>
+            `
+        })
+
+        res.status(201).json({
+            message: "User registered successfully",
+            success: true,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        });
+    } catch (error) {
+        console.error("register error:", error)
+        res.status(500).json({
+            message: error.message || "Registration failed. Please try again.",
             success: false,
-            err: "User already exists"
         })
     }
-
-    const user = await userModel.create({ username, email, password })
-
-    const emailVerificationToken = jwt.sign({
-        email: user.email,
-    }, process.env.JWT_SECRET)
-
-    await sendEmail({
-        to: email,
-        subject: "Welcome to Perplexity!",
-        html: `
-                <p>Hi ${username},</p>
-                <p>Thank you for registering at <strong>Perplexity</strong>. We're excited to have you on board!</p>
-                <p>Please verify your email address by clicking the link below:</p>
-                <a href="${process.env.BACKEND_URL || "http://localhost:3000"}/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a>
-                <p>If you did not create an account, please ignore this email.</p>
-                <p>Best regards,<br>The Perplexity Team</p>
-        `
-    })
-
-    res.status(201).json({
-        message: "User registered successfully",
-        success: true,
-        user: {
-            id: user._id,
-            username: user.username,
-            email: user.email
-        }
-    });
-
-
 
 }
 
@@ -79,50 +85,58 @@ export async function register(req, res) {
 export async function login(req, res) {
     const { email, password } = req.body;
 
-    const user = await userModel.findOne({ email })
+    try {
+        const user = await userModel.findOne({ email })
 
-    if (!user) {
-        return res.status(400).json({
-            message: "Invalid email or password",
-            success: false,
-            err: "User not found"
-        })
-    }
+        if (!user) {
+            return res.status(400).json({
+                message: "Invalid email or password",
+                success: false,
+                err: "User not found"
+            })
+        }
 
-    const isPasswordMatch = await user.comparePassword(password);
+        const isPasswordMatch = await user.comparePassword(password);
 
-    if (!isPasswordMatch) {
-        return res.status(400).json({
-            message: "Invalid email or password",
-            success: false,
-            err: "Incorrect password"
-        })
-    }
+        if (!isPasswordMatch) {
+            return res.status(400).json({
+                message: "Invalid email or password",
+                success: false,
+                err: "Incorrect password"
+            })
+        }
 
-    if (!user.verified) {
-        return res.status(400).json({
-            message: "Please verify your email before logging in",
-            success: false,
-            err: "Email not verified"
-        })
-    }
+        if (!user.verified) {
+            return res.status(400).json({
+                message: "Please verify your email before logging in",
+                success: false,
+                err: "Email not verified"
+            })
+        }
 
-    const token = jwt.sign({
-        id: user._id,
-        username: user.username,
-    }, process.env.JWT_SECRET, { expiresIn: '7d' })
-
-    res.cookie("token", token, cookieOptions)
-
-    res.status(200).json({
-        message: "Login successful",
-        success: true,
-        user: {
+        const token = jwt.sign({
             id: user._id,
             username: user.username,
-            email: user.email
-        }
-    })
+        }, process.env.JWT_SECRET, { expiresIn: '7d' })
+
+        res.cookie("token", token, cookieOptions)
+
+        res.status(200).json({
+            message: "Login successful",
+            success: true,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        })
+    } catch (error) {
+        console.error("login error:", error)
+        res.status(500).json({
+            message: error.message || "Login failed. Please try again.",
+            success: false,
+        })
+    }
 
 }
 
@@ -152,6 +166,7 @@ export async function getMe(req, res) {
     })
 }
 
+
 /**
  * @desc Log out the current user by clearing the auth cookie
  * @route POST /api/auth/logout
@@ -165,6 +180,7 @@ export async function logout(req, res) {
         success: true
     })
 }
+
 
 /**
  * @desc Sign up or log in a user using a Google ID token
@@ -187,7 +203,7 @@ export async function googleLogin(req, res) {
     try {
         const ticket = await googleClient.verifyIdToken({
             idToken: credential,
-            audience: process.env.GOOGLE_CLIENT_ID2,
+            audience: process.env.GOOGLE_CLIENT_ID,
         });
         payload = ticket.getPayload();
     } catch (err) {
@@ -200,46 +216,55 @@ export async function googleLogin(req, res) {
 
     const { email, name, sub: googleId } = payload;
 
-    let user = await userModel.findOne({ $or: [{ email }, { googleId }] });
+    try {
+        let user = await userModel.findOne({ $or: [ { email }, { googleId } ] });
 
-    if (!user) {
-        let baseUsername = (name || email.split("@")[0]).replace(/\s+/g, "").toLowerCase();
-        let username = baseUsername;
-        let suffix = 0;
-        while (await userModel.findOne({ username })) {
-            suffix++;
-            username = `${baseUsername}${suffix}`;
+        if (!user) {
+            let baseUsername = (name || email.split("@")[ 0 ]).replace(/\s+/g, "").toLowerCase();
+            let username = baseUsername;
+            let suffix = 0;
+            while (await userModel.findOne({ username })) {
+                suffix++;
+                username = `${baseUsername}${suffix}`;
+            }
+
+            user = await userModel.create({
+                username,
+                email,
+                googleId,
+                verified: true,
+            });
+        } else if (!user.googleId) {
+            user.googleId = googleId;
+            user.verified = true;
+            await user.save();
         }
 
-        user = await userModel.create({
-            username,
-            email,
-            googleId,
-            verified: true,
-        });
-    } else if (!user.googleId) {
-        user.googleId = googleId;
-        user.verified = true;
-        await user.save();
-    }
-
-    const token = jwt.sign({
-        id: user._id,
-        username: user.username,
-    }, process.env.JWT_SECRET, { expiresIn: '7d' })
-
-    res.cookie("token", token, cookieOptions)
-
-    res.status(200).json({
-        message: "Logged in with Google successfully",
-        success: true,
-        user: {
+        const token = jwt.sign({
             id: user._id,
             username: user.username,
-            email: user.email
-        }
-    })
+        }, process.env.JWT_SECRET, { expiresIn: '7d' })
+
+        res.cookie("token", token, cookieOptions)
+
+        res.status(200).json({
+            message: "Logged in with Google successfully",
+            success: true,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        })
+    } catch (error) {
+        console.error("googleLogin error:", error)
+        res.status(500).json({
+            message: error.message || "Google sign-in failed. Please try again.",
+            success: false,
+        })
+    }
 }
+
 
 /**
  * @desc Verify user's email address
