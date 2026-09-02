@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, Navigate } from 'react-router'
 import { useSelector } from 'react-redux'
 import { FishSymbol, ArrowRight, ShieldCheck } from 'lucide-react'
+import GoogleSignInButton from '../components/GoogleSignInButton'
 
 // Hooks
 import { useAuth } from '../hook/useAuth'
