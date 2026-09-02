@@ -116,6 +116,83 @@ Elix-Ai/
 3. A LangChain agent — running the selected model (Mistral or Gemini) — decides whether to call the **web search tool** based on the query and the active system prompt (Signal / Context / Deep Dive).
 4. The agent's response, along with any cited sources, is saved and streamed back to the client.
 
+### System Flow
+
+```mermaid
+flowchart TD
+    A[Landing / Login Page] -->|Email + Password or Google Sign-In| B{Authenticated?}
+    B -- No --> A
+    B -- Yes --> C[Dashboard]
+
+    C --> D[Start New Session]
+    C --> E[Open existing chat from Sidebar]
+
+    D --> F[Compose message]
+    E --> F
+
+    F --> G[Select Mode: Signal / Context / Deep Dive]
+    F --> H[Select Model: Mistral / Gemini]
+    F --> I[Attach image or file - optional]
+
+    G --> J[Send Message]
+    H --> J
+    I --> J
+
+    J --> K[Backend saves user message to MongoDB]
+    K --> L{Needs live info?}
+    L -- Yes --> M[LangChain agent calls Tavily Search tool]
+    L -- No --> N[Agent answers from model knowledge]
+    M --> O[Generate response + source citations]
+    N --> O
+
+    O --> P[Save AI message to MongoDB]
+    P --> Q[Render answer: markdown, code highlighting, source chips]
+    Q --> C
+```
+
+---
+
+## 🗄️ Database Schema
+
+### Entity-Relationship Diagram
+
+```mermaid
+erDiagram
+    USER ||--o{ CHAT : owns
+    CHAT ||--o{ MESSAGE : contains
+
+    USER {
+        ObjectId _id
+        string username
+        string email
+        string password "optional if googleId is set"
+        string googleId "set for Google Sign-In users"
+        boolean verified
+        date createdAt
+    }
+
+    CHAT {
+        ObjectId _id
+        ObjectId user FK
+        string title
+        date createdAt
+    }
+
+    MESSAGE {
+        ObjectId _id
+        ObjectId chat FK
+        string content
+        string role "user or ai"
+        string image "base64, optional"
+        string fileName "optional"
+        string fileText "extracted file text, optional"
+        array sources "embedded search-source citations"
+        date createdAt
+    }
+```
+
+> `sources` is an embedded array of `{ title, url }` subdocuments on a `MESSAGE` — not a separate collection.
+
 ---
 
 ## 🚀 Getting Started
