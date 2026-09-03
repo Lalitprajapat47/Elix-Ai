@@ -511,16 +511,17 @@ const Dashboard = () => {
       }
 
       {/* Main Workspace Layout */}
-      {
-        isSidebarOpen && (
+      <div className="relative z-10 flex h-full w-full">
+
+        {/* Mobile overlay: darkens the main content without blurring it.
+            It stays below the sidebar so sidebar items remain clickable. */}
+        {isSidebarOpen && (
           <div
             onClick={() => setIsSidebarOpen(false)}
             className="fixed inset-0 z-40 bg-black/60 md:hidden"
+            aria-hidden="true"
           />
-        )
-      }
-
-      <div className="relative z-10 flex h-full w-full">
+        )}
 
         <aside
           className={`fixed inset-y-0 left-0 z-50 flex h-full w-[280px] shrink-0 flex-col bg-[#08090C] border-r border-white/[0.08] p-4 transition-transform duration-300 ease-in-out md:relative md:z-auto md:transition-[width] md:duration-300 md:translate-x-0 ${isSidebarOpen
