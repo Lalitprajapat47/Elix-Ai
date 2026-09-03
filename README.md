@@ -4,7 +4,7 @@
 
 ### High Signal. Zero Noise.
 
-An AI chat assistant built to give **short, accurate, structured answers** - not endless paragraphs. Ask a question, get the facts, move on.
+An AI chat assistant built to give **short, accurate, structured answers** — not endless paragraphs. Ask a question, get the facts, move on.
 
 [![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev)
 [![Node.js](https://img.shields.io/badge/Node.js-Express%205-339933?logo=node.js&logoColor=white)](https://expressjs.com)
@@ -13,7 +13,7 @@ An AI chat assistant built to give **short, accurate, structured answers** - not
 [![TailwindCSS](https://img.shields.io/badge/Tailwind%20CSS-4-38BDF8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![License](https://img.shields.io/badge/License-ISC-blue)](#license)
 
-[Live Demo](#) · [Report a Bug](#) · [Request a Feature](#)
+[🔗 Live Demo](https://elix-ai-2i3g.vercel.app) · [Report a Bug](https://github.com/Lalitprajapat47/Elix-Ai/issues) · [Request a Feature](https://github.com/Lalitprajapat47/Elix-Ai/issues)
 
 </div>
 
@@ -116,6 +116,83 @@ Elix-Ai/
 3. A LangChain agent — running the selected model (Mistral or Gemini) — decides whether to call the **web search tool** based on the query and the active system prompt (Signal / Context / Deep Dive).
 4. The agent's response, along with any cited sources, is saved and streamed back to the client.
 
+### System Flow
+
+```mermaid
+flowchart TD
+    A[Landing / Login Page] -->|Email + Password or Google Sign-In| B{Authenticated?}
+    B -- No --> A
+    B -- Yes --> C[Dashboard]
+
+    C --> D[Start New Session]
+    C --> E[Open existing chat from Sidebar]
+
+    D --> F[Compose message]
+    E --> F
+
+    F --> G[Select Mode: Signal / Context / Deep Dive]
+    F --> H[Select Model: Mistral / Gemini]
+    F --> I[Attach image or file - optional]
+
+    G --> J[Send Message]
+    H --> J
+    I --> J
+
+    J --> K[Backend saves user message to MongoDB]
+    K --> L{Needs live info?}
+    L -- Yes --> M[LangChain agent calls Tavily Search tool]
+    L -- No --> N[Agent answers from model knowledge]
+    M --> O[Generate response + source citations]
+    N --> O
+
+    O --> P[Save AI message to MongoDB]
+    P --> Q[Render answer: markdown, code highlighting, source chips]
+    Q --> C
+```
+
+---
+
+## 🗄️ Database Schema
+
+### Entity-Relationship Diagram
+
+```mermaid
+erDiagram
+    USER ||--o{ CHAT : owns
+    CHAT ||--o{ MESSAGE : contains
+
+    USER {
+        ObjectId _id
+        string username
+        string email
+        string password "optional if googleId is set"
+        string googleId "set for Google Sign-In users"
+        boolean verified
+        date createdAt
+    }
+
+    CHAT {
+        ObjectId _id
+        ObjectId user FK
+        string title
+        date createdAt
+    }
+
+    MESSAGE {
+        ObjectId _id
+        ObjectId chat FK
+        string content
+        string role "user or ai"
+        string image "base64, optional"
+        string fileName "optional"
+        string fileText "extracted file text, optional"
+        array sources "embedded search-source citations"
+        date createdAt
+    }
+```
+
+> `sources` is an embedded array of `{ title, url }` subdocuments on a `MESSAGE` — not a separate collection.
+
 ---
 
 ## 🚀 Getting Started
@@ -188,10 +265,10 @@ The app will be available at `http://localhost:5173`.
 
 Elix is deployed as two independent services:
 
-| Service | Platform | Notes |
-|---|---|---|
-| **Frontend** | [Vercel](https://vercel.com) | Static Vite build, SPA rewrites configured |
-| **Backend** | [Render](https://render.com) | Persistent Node.js web service (required for Socket.io) |
+| Service | Platform | URL | Notes |
+|---|---|---|---|
+| **Frontend** | [Vercel](https://vercel.com) | [elix-ai-2i3g.vercel.app](https://elix-ai-2i3g.vercel.app) | Static Vite build, SPA rewrites configured |
+| **Backend** | [Render](https://render.com) | [elix-ai-9pz0.onrender.com](https://elix-ai-9pz0.onrender.com) | Persistent Node.js web service (required for Socket.io) |
 
 Set the environment variables listed above in each platform's dashboard. Make sure `FRONTEND_URL` (backend) and `VITE_API_URL` (frontend) point to each other's deployed URLs, and that your MongoDB cluster allows connections from your hosting provider's IPs.
 
@@ -218,7 +295,40 @@ Set the environment variables listed above in each platform's dashboard. Make su
 
 ## 📸 Screenshots
 
-> _Add screenshots or a short demo GIF of the login screen and chat interface here._
+<table>
+  <tr>
+    <td align="center"><b>Login</b></td>
+    <td align="center"><b>Register</b></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/70ebae48-fa7a-4ebe-91e4-e49ea45badb3" width="400"/></td>
+    <td><img src="https://github.com/user-attachments/assets/b731ca07-73e0-4505-ad25-7ed0a14e08c4" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Dashboard</b></td>
+    <td align="center"><b>Chat Interface</b></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/3185668f-d876-4c25-9052-75bd14c0f97e" width="400"/></td>
+    <td><img src="https://github.com/user-attachments/assets/56a128df-08a8-4a45-bbcd-d17273816847" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Account Menu / Logout</b></td>
+    <td align="center"><b>Accuracy of ai</b></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/6e0ca453-6b91-4078-b009-80990a1fd161" width="400"/></td>
+    <td><img src="https://github.com/user-attachments/assets/54d6658f-0b8c-438f-9d0c-4d80328d737d" width="400"/></td>
+  </tr>
+</table>
+
+---
+
+## 🎥 Video Demo
+
+[![Elix.ai Demo](REPLACE_WITH_YOUTUBE_THUMBNAIL_URL)](REPLACE_WITH_YOUTUBE_VIDEO_LINK)
+
+*Click the thumbnail above to watch the full walkthrough on YouTube.*
 
 ---
 
