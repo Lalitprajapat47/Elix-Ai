@@ -216,7 +216,6 @@ const Dashboard = () => {
 
   const openChat = (chatId) => {
     chat.handleOpenChat(chatId, chats)
-    closeSidebarOnMobile()
   }
 
   const handleDeleteChat = async (event, chatId) => {
