@@ -295,7 +295,40 @@ Set the environment variables listed above in each platform's dashboard. Make su
 
 ## 📸 Screenshots
 
-> _Add screenshots or a short demo GIF of the login screen and chat interface here._
+<table>
+  <tr>
+    <td align="center"><b>Login</b></td>
+    <td align="center"><b>Register</b></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/70ebae48-fa7a-4ebe-91e4-e49ea45badb3" width="400"/></td>
+    <td><img src="https://github.com/user-attachments/assets/b731ca07-73e0-4505-ad25-7ed0a14e08c4" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Dashboard</b></td>
+    <td align="center"><b>Chat Interface</b></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/3185668f-d876-4c25-9052-75bd14c0f97e" width="400"/></td>
+    <td><img src="https://github.com/user-attachments/assets/56a128df-08a8-4a45-bbcd-d17273816847" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Account Menu / Logout</b></td>
+    <td align="center"><b>Accuracy of ai</b></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/6e0ca453-6b91-4078-b009-80990a1fd161" width="400"/></td>
+    <td><img src="https://github.com/user-attachments/assets/54d6658f-0b8c-438f-9d0c-4d80328d737d" width="400"/></td>
+  </tr>
+</table>
+
+---
+
+## 🎥 Video Demo
+
+[![Elix.ai Demo](REPLACE_WITH_YOUTUBE_THUMBNAIL_URL)](REPLACE_WITH_YOUTUBE_VIDEO_LINK)
+
+*Click the thumbnail above to watch the full walkthrough on YouTube.*
 
 ---
 
