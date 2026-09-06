@@ -21,12 +21,16 @@ export async function sendMessage(req, res) {
         }
 
         if (!chatId) {
-            const titleSeed = message?.trim() ? message : (fileName ? `File: ${fileName}` : "Shared an image");
-            title = await generateChatTitle(titleSeed);
+            const titleSeed = message?.trim()
+                ? message
+                : (fileName ? `File: ${fileName}` : "Shared an image");
+
+            title = titleSeed.slice(0, 60);
+
             chat = await chatModel.create({
                 user: req.user.id,
                 title
-            })
+            });
         }
 
         const userMessage = await messageModel.create({
