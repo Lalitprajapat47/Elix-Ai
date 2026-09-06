@@ -28,6 +28,7 @@ const agent = createAgent({
 // Tried in order — if one doesn't respond in time (or errors), the next
 // one is tried automatically. First entry is the one confirmed working.
 const GEMINI_FALLBACK_MODELS = [
+    "gemini-3.1-pro-preview",
     "gemini-3-flash-preview",
     "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
