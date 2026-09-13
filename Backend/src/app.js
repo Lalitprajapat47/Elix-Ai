@@ -22,6 +22,9 @@ app.use(cors({
 app.get("/", (req, res) => {
     res.json({ message: "Server is running" });
 });
+app.head("/", (req, res) => {
+    res.status(200).end();
+});
 
 app.use("/api/auth", authRouter);
 app.use("/api/chats", chatRouter);
