@@ -64,6 +64,7 @@ function getGeminiAgent(modelName) {
 
 const AGENTS = {
     mistral: agent,
+    nemotron: nemotronAgent,
 }
 
 const SYSTEM_PROMPTS = {
