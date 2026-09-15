@@ -23,7 +23,7 @@ const searchInternetTool = tool(
 
 const agent = createAgent({
     model: mistralModel,
-    tools: [ searchInternetTool ],
+    tools: [searchInternetTool],
 })
 
 const nemotronModel = new ChatOpenAI({
@@ -36,7 +36,7 @@ const nemotronModel = new ChatOpenAI({
 
 const nemotronAgent = createAgent({
     model: nemotronModel,
-    tools: [ searchInternetTool ],
+    tools: [searchInternetTool],
 })
 
 // Tried in order — if one doesn't respond in time (or errors), the next
@@ -57,7 +57,7 @@ function getGeminiAgent(modelName) {
             model: modelName,
             apiKey: process.env.GEMINI_API_KEY,
         })
-        geminiAgentsByModel.set(modelName, createAgent({ model, tools: [ searchInternetTool ] }))
+        geminiAgentsByModel.set(modelName, createAgent({ model, tools: [searchInternetTool] }))
     }
     return geminiAgentsByModel.get(modelName)
 }
@@ -198,7 +198,7 @@ async function invokeWithGeminiFallback(invokeArgs) {
 export async function generateResponse(messages, mode = "signal", aiModel = "mistral") {
     console.log(messages)
 
-    const systemPrompt = SYSTEM_PROMPTS[ mode ] || SYSTEM_PROMPTS.signal
+    const systemPrompt = SYSTEM_PROMPTS[mode] || SYSTEM_PROMPTS.signal
 
     const invokeArgs = {
         messages: [
@@ -221,14 +221,16 @@ export async function generateResponse(messages, mode = "signal", aiModel = "mis
                 } else if (msg.role == "ai") {
                     return new AIMessage(msg.content)
                 }
-            })) ]
+            }))]
     }
+
+    const selectedAgent = AGENTS[aiModel] || AGENTS.mistral;
 
     const response = aiModel === "gemini"
         ? await invokeWithGeminiFallback(invokeArgs)
-        : await withTimeout(agent.invoke(invokeArgs), AGENT_TIMEOUT_MS, "AI response");
+        : await withTimeout(selectedAgent.invoke(invokeArgs), AGENT_TIMEOUT_MS, "AI response");
 
-    const text = response.messages[ response.messages.length - 1 ].text;
+    const text = response.messages[response.messages.length - 1].text;
     const sources = extractSources(response.messages);
 
     return { text, sources };
