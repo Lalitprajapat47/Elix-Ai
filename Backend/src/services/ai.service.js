@@ -26,6 +26,19 @@ const agent = createAgent({
     tools: [ searchInternetTool ],
 })
 
+const nemotronModel = new ChatOpenAI({
+    model: "nvidia/llama-3.1-nemotron-70b-instruct", // apna copied Model ID yahan daalo
+    apiKey: process.env.NVIDIA_API_KEY,
+    configuration: {
+        baseURL: "https://integrate.api.nvidia.com/v1",
+    },
+});
+
+const nemotronAgent = createAgent({
+    model: nemotronModel,
+    tools: [ searchInternetTool ],
+})
+
 // Tried in order — if one doesn't respond in time (or errors), the next
 // one is tried automatically. First entry is the one confirmed working.
 const GEMINI_FALLBACK_MODELS = [
