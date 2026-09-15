@@ -36,7 +36,7 @@ const nemotronModel = new ChatOpenAI({
 
     modelKwargs: {
         chat_template_kwargs: {
-            enable_thinking: true,
+            enable_thinking: false,
             force_nonempty_content: true,
         },
     },
@@ -236,9 +236,18 @@ export async function generateResponse(messages, mode = "signal", aiModel = "mis
 
     const response = aiModel === "gemini"
         ? await invokeWithGeminiFallback(invokeArgs)
-        : await withTimeout(selectedAgent.invoke(invokeArgs), AGENT_TIMEOUT_MS, "AI response");
+        : await withTimeout(
+            selectedAgent.invoke(invokeArgs),
+            AGENT_TIMEOUT_MS,
+            "AI response"
+        );
 
-    const text = response.messages[response.messages.length - 1].text;
+    let text = response.messages[response.messages.length - 1].text;
+
+    text = text
+        .replace(/<think>[\s\S]*?<\/think>/gi, "")
+        .trim();
+
     const sources = extractSources(response.messages);
 
     return { text, sources };
