@@ -27,7 +27,7 @@ const agent = createAgent({
 })
 
 const nemotronModel = new ChatOpenAI({
-    model: "nvidia/llama-3.1-nemotron-70b-instruct", // apna copied Model ID yahan daalo
+    model: "nvidia/nemotron-3-ultra-550b-a55b", // apna copied Model ID yahan daalo
     apiKey: process.env.NVIDIA_API_KEY,
     configuration: {
         baseURL: "https://integrate.api.nvidia.com/v1",
