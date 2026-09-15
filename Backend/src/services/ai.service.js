@@ -27,17 +27,26 @@ const agent = createAgent({
 })
 
 const nemotronModel = new ChatOpenAI({
-    model: "nvidia/nemotron-3-ultra-550b-a55b", // apna copied Model ID yahan daalo
+    model: "nvidia/nemotron-3-ultra-550b-a55b",
     apiKey: process.env.NVIDIA_API_KEY,
+
     configuration: {
         baseURL: "https://integrate.api.nvidia.com/v1",
+    },
+
+    modelKwargs: {
+        extra_body: {
+            chat_template_kwargs: {
+                enable_thinking: true,
+            },
+        },
     },
 });
 
 const nemotronAgent = createAgent({
     model: nemotronModel,
-    tools: [searchInternetTool],
-})
+    tools: [],
+});
 
 // Tried in order — if one doesn't respond in time (or errors), the next
 // one is tried automatically. First entry is the one confirmed working.
@@ -162,7 +171,7 @@ function extractSources(agentMessages) {
     return sources
 }
 
-const AGENT_TIMEOUT_MS = 30000;
+const AGENT_TIMEOUT_MS = 120000;
 const GEMINI_FALLBACK_TIMEOUT_MS = 8000;
 
 function withTimeout(promise, ms, label) {
