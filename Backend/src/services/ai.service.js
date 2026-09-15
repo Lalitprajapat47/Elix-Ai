@@ -35,17 +35,16 @@ const nemotronModel = new ChatOpenAI({
     },
 
     modelKwargs: {
-        extra_body: {
-            chat_template_kwargs: {
-                enable_thinking: true,
-            },
+        chat_template_kwargs: {
+            enable_thinking: true,
+            force_nonempty_content: true,
         },
     },
 });
 
 const nemotronAgent = createAgent({
     model: nemotronModel,
-    tools: [],
+    tools: [searchInternetTool],
 });
 
 // Tried in order — if one doesn't respond in time (or errors), the next
