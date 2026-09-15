@@ -20,6 +20,7 @@ const MODES = [
 const AI_MODELS = [
   { id: 'mistral', label: 'Mistral Medium', description: 'Default — balanced, tool-enabled' },
   { id: 'gemini', label: 'Gemini Flash', description: 'Fast, cost-efficient alternative' },
+  { id: 'nemotron', label: 'Nemotron', description: 'NVIDIA — strong reasoning, open model' },
 ]
 
 const PLACEHOLDER_PHRASES = [
