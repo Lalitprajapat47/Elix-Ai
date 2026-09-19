@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ Elix.ai
+# Elix.ai
 
 ### High Signal. Zero Noise.
 
