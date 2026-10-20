@@ -342,7 +342,7 @@ Set the environment variables listed above in each platform's dashboard. Make su
 
 ## License
 
-This project is licensed under the ISC License.
+This project is licensed under the ISC License
 
 ---
 
