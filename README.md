@@ -2,7 +2,7 @@
 
 # Elix.ai
 
-### High Signal. Zero Noise.
+### High Signal. Zero Noise
 
 An AI chat assistant built to give **short, accurate, structured answers** — not endless paragraphs. Ask a question, get the facts, move on.
 
